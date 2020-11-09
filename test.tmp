@@ -1,0 +1,12 @@
+let f (x1 : int) (x2 : int) : int ! output =
+  let x3 = x1 + x2 in
+  print x3;
+  x3
+
+print : int -> unit ! output
+
+f = \x. print x; x
+// int -> int ! output
+
+g = \x1. print hi; \x2. g (x1 + x2)
+// int -> (int -> int ! output) ! output
