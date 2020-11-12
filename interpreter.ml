@@ -8,33 +8,34 @@ let make_new_var bound =
   in
   aux 0
 
-let rec subst expr x new_expr =
+let rec subst (expr : Expr.t) x (new_expr : Expr.t) =
   match expr with
   | Var y when String.equal x y -> new_expr
   | Binary (binop, e1, e2) -> Binary (binop, subst e1 x new_expr, subst e2 x new_expr)
   | Apply (e1, e2) -> Apply (subst e1 x new_expr, subst e2 x new_expr)
-  | Lambda (y, e) when not (String.equal x y) ->
-    if Set.mem (Ast.free_vars new_expr) x then
-      let z = make_new_var (Set.union (Ast.free_vars e) (Ast.free_vars new_expr)) in
-      Lambda (z, subst (subst e y (Var z)) x new_expr)
-    else Lambda (y, subst e x new_expr)
+  | Lambda (y, t, e) when not (String.equal x y) ->
+    if Set.mem (Expr.free_vars new_expr) x then
+      let z = make_new_var (Set.union (Expr.free_vars e) (Expr.free_vars new_expr)) in
+      Lambda (z, t, subst (subst e y (Var z)) x new_expr)
+    else Lambda (y, t, subst e x new_expr)
   | Seq (e1, e2) -> Seq (subst e1 x new_expr, subst e2 x new_expr)
   | _ -> expr
 
-let rec reduce expr =
+let rec reduce (expr : Expr.t) : Expr.t =
   match expr with
   | Binary (binop, e1, e2) -> Binary (binop, reduce e1, reduce e2)
-  | Apply (Lambda (x, e1), e2) -> subst (reduce e1) x (reduce e2)
+  | Apply (Lambda (x, _, e1), e2) -> subst (reduce e1) x (reduce e2)
   | Apply (e1, e2) ->
-    let new_expr = Apply (reduce e1, reduce e2) in
-    if Ast.equal expr new_expr then expr else reduce new_expr
-  | Lambda (x, e) -> Lambda (x, reduce e)
+    let new_expr = Expr.Apply (reduce e1, reduce e2) in
+    if Expr.equal expr new_expr then expr else reduce new_expr
+  | Lambda (x, t, e) -> Lambda (x, t, reduce e)
   | Seq (e1, e2) -> Seq (reduce e1, reduce e2)
   | expr -> expr
 
 let eval =
-  let open Or_error.Let_syntax in
-  let rec eval = function
+  let rec eval (expr : Expr.t) =
+    let open Or_error.Let_syntax in
+    match expr with
     | Value v -> Ok v
     | Var x -> Or_error.error_s [%message "cannot eval free variable" x]
     | Binary (binop, e1, e2) ->
@@ -55,6 +56,6 @@ let eval =
     | Seq (e1, e2) ->
       let%bind (_ : int) = eval e1 in
       eval e2
-    | expr -> Or_error.error_s [%message "cannot evaluate expr" (expr : Ast.t)]
+    | expr -> Or_error.error_s [%message "cannot evaluate expr" (expr : Expr.t)]
   in
   Fn.compose eval reduce

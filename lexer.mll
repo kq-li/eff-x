@@ -14,14 +14,20 @@ rule read =
     { read lexbuf }
   | '\r' | '\n' | "\r\n"
     { next_line lexbuf; read lexbuf }
+  | "int"
+    { INT }
+  | "->"
+    { ARROW }
   | '-'? ['0'-'9']+
-    { INT (Base.Int.of_string (Lexing.lexeme lexbuf)) }
-  | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '_' '-' '\'']*
-    { VAR (Lexing.lexeme lexbuf) }
+    { NUM (Base.Int.of_string (Lexing.lexeme lexbuf)) }
+  | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
+    { ID (Lexing.lexeme lexbuf) }
   | '\\'
     { LAMBDA }
   | '.'
     { DOT }
+  | ':'
+    { COLON }
   | ';'
     { SEMICOLON }
   | '('

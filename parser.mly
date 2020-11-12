@@ -2,10 +2,13 @@
   open Ast
 %}
 
-%token <int> INT
-%token <string> VAR
+%token <int> NUM
+%token <string> ID
+%token INT
+%token ARROW
 %token LAMBDA
 %token DOT
+%token COLON
 %token SEMICOLON
 %token LPAREN
 %token RPAREN
@@ -16,12 +19,12 @@
 %token EOF
 
 %right FUNC
-%right SEMICOLON
+%right SEMICOLON ARROW
 %left PLUS MINUS
 %left MULTIPLY DIVIDE
-%left INT VAR LPAREN LAMBDA
+%left NUM ID LPAREN LAMBDA
 
-%start <t option> expr_opt
+%start <Expr.t option> expr_opt
 %%
 
 expr_opt:
@@ -31,20 +34,26 @@ expr_opt:
     { Some e }
 
 expr:
-  | n = INT
-    { Value n }
-  | var = VAR
-    { Var var }
+  | n = NUM
+    { Expr.Value n }
+  | x = ID
+    { Expr.Var x }
   | LPAREN; e = expr; RPAREN
     { e }
   | e1 = expr; bop = binop; e2 = expr
-    { Binary (bop, e1, e2) }
-  | LAMBDA; arg = VAR; DOT; e = expr %prec FUNC
-    { Lambda (arg, e) }
-  | e1 = expr; e2 = expr %prec INT
-    { Apply (e1, e2) }
+    { Expr.Binary (bop, e1, e2) }
+  | LAMBDA; x = ID; COLON; t = typ; DOT; e = expr %prec FUNC
+    { Expr.Lambda (x, t, e) }
+  | e1 = expr; e2 = expr %prec NUM
+    { Expr.Apply (e1, e2) }
   | e1 = expr; SEMICOLON; e2 = expr
-    { Seq (e1, e2) }
+    { Expr.Seq (e1, e2) }
+
+typ:
+  | INT
+    { Type.Int }
+  | t1 = typ; ARROW; t2 = typ
+    { Type.Fun (t1, t2) }
 
 %inline binop:
   | PLUS     { Plus }

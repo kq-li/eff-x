@@ -1,5 +1,6 @@
 open! Core
+open! Ast
 
-val subst : Ast.t -> string -> Ast.t -> Ast.t
-val reduce : Ast.t -> Ast.t
-val eval : Ast.t -> int Or_error.t
+val subst : Expr.t -> string -> Expr.t -> Expr.t
+val reduce : Expr.t -> Expr.t
+val eval : Expr.t -> int Or_error.t
