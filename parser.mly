@@ -10,6 +10,8 @@
 %token DOT
 %token COLON
 %token SEMICOLON
+%token BANG
+%token OUTPUT
 %token LPAREN
 %token RPAREN
 %token PLUS
@@ -19,7 +21,7 @@
 %token EOF
 
 %right FUNC
-%right SEMICOLON ARROW
+%right SEMICOLON ARROW BANG
 %left PLUS MINUS
 %left MULTIPLY DIVIDE
 %left NUM ID LPAREN LAMBDA
@@ -54,9 +56,15 @@ typ:
     { Type.Int }
   | t1 = typ; ARROW; t2 = typ
     { Type.Fun (t1, t2) }
+  | t = typ; BANG; effs = nonempty_list(effect)
+    { Type.With_effect (t, Effect.Set.of_list effs) }
 
 %inline binop:
-  | PLUS     { Plus }
-  | MINUS    { Minus }
-  | MULTIPLY { Multiply }
-  | DIVIDE   { Divide }
+  | PLUS     { Op.Plus }
+  | MINUS    { Op.Minus }
+  | MULTIPLY { Op.Multiply }
+  | DIVIDE   { Op.Divide }
+
+%inline effect:
+  | OUTPUT { Effect.Output }
+

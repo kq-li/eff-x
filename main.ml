@@ -18,7 +18,7 @@ let () =
                  let reduced = Interpreter.reduce expr in
                  print_s [%message (reduced : Expr.t)];
                  let result = Interpreter.eval expr in
-                 print_s [%message (result : int Or_error.t)])
+                 print_s [%message (result : Expr.t Or_error.t)])
           |> aux
         with
       | Parser.Error ->

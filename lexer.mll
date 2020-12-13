@@ -16,6 +16,8 @@ rule read =
     { next_line lexbuf; read lexbuf }
   | "int"
     { INT }
+  | "output"
+    { OUTPUT }
   | "->"
     { ARROW }
   | '-'? ['0'-'9']+
@@ -30,6 +32,8 @@ rule read =
     { COLON }
   | ';'
     { SEMICOLON }
+  | '!'
+    { BANG }
   | '('
     { LPAREN }
   | ')'
