@@ -14,3 +14,14 @@
 - Implemented `With_effect` type that extends a type with a set of effects
 - Added lexer and parser support for effects
 - Note: `int!output` indicates an `int`-valued expression with an `output` side effect, like `print 5; 6`, but evaluating this expression changes the type to just `int`
+
+## 12/13
+## 2 hours
+- Weighed pros and cons of eager vs. lazy evaluation/compilation
+    - Lazy makes it possible for unevaluated expressions to have effect types
+    - Eager means only deferred computations (i.e. thunks) can have effects
+- Pivoted towards lower-level language (more like Bril)
+    - Necessary to do any sort of meaningful reordering later
+- Theorized that exprs can have effects, and commands just provide an order on exprs
+    - Can be implemented with unops/binops or native funcs
+    - Sequences of assignments of exprs can be reordered and optimized

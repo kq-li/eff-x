@@ -1,40 +1,77 @@
 open! Core
 
 module Op : sig
-  type t =
-    | Plus
-    | Minus
-    | Multiply
-    | Divide
-  [@@deriving compare, equal, sexp_of]
+  module Unary : sig
+    type t = Negate [@@deriving compare, equal, sexp_of]
+  end
+
+  module Binary : sig
+    type t =
+      | Plus
+      | Minus
+      | Multiply
+      | Divide
+    [@@deriving compare, equal, sexp_of]
+  end
 end
 
 module Effect : sig
-  type t = Output [@@deriving compare, equal, sexp_of]
+  type t =
+    | Output
+    | Read
+    | Write
+  [@@deriving compare, equal, sexp_of]
 
   include Comparable.S_plain with type t := t
 end
 
 module Type : sig
   type t =
+    | Unit
     | Int
     | Fun of t * t
     | With_effect of t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
 end
 
+module Value : sig
+  type t =
+    | Unit
+    | Int of int
+    | Var of string
+  [@@deriving compare, equal, sexp_of]
+end
+
 module Expr : sig
   type t =
-    | Value of int
-    | Var of string
-    | Binary of Op.t * t * t
-    | Lambda of string * Type.t * t
-    | Apply of t * t
-    | Seq of t * t
+    | Value of Value.t
+    | Unary of Op.Unary.t * Value.t
+    | Binary of Op.Binary.t * Value.t * Value.t
+    | Apply of string * Value.t list
   [@@deriving compare, equal, sexp_of]
+end
 
-  val is_value : t -> bool
-  val value_exn : t -> int
-  val free_vars : t -> String.Set.t
-  val check_type : t -> Type.t Or_error.t
+module Stmt : sig
+  type t =
+    | Skip
+    | Assign of string * Type.t * Expr.t
+    | If of Value.t * t * t
+    | While of Value.t * t
+    | Seq of t list
+    | Return of Value.t
+  [@@deriving compare, equal, sexp_of]
+end
+
+module Func : sig
+  type t = {
+    name : string;
+    args : (string * Type.t) list;
+    ret_type : Type.t;
+    body : Stmt.t;
+  }
+  [@@deriving compare, equal, sexp_of]
+end
+
+module Prog : sig
+  type t = Func.t String.Map.t [@@deriving compare, equal, sexp_of]
 end

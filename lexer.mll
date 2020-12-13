@@ -14,20 +14,27 @@ rule read =
     { read lexbuf }
   | '\r' | '\n' | "\r\n"
     { next_line lexbuf; read lexbuf }
+  | "unit"
+    { UNIT }
   | "int"
     { INT }
   | "output"
     { OUTPUT }
+  | "if"
+    { IF }
+  | "else"
+    { ELSE }
+  | "while"
+    { WHILE }
+  | "return"
   | "->"
     { ARROW }
   | '-'? ['0'-'9']+
     { NUM (Base.Int.of_string (Lexing.lexeme lexbuf)) }
   | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
     { ID (Lexing.lexeme lexbuf) }
-  | '\\'
-    { LAMBDA }
-  | '.'
-    { DOT }
+  | ','
+    { COMMA }
   | ':'
     { COLON }
   | ';'
@@ -38,6 +45,12 @@ rule read =
     { LPAREN }
   | ')'
     { RPAREN }
+  | '{'
+    { LBRACE }
+  | '}'
+    { RBRACE }
+  | '='
+    { ASSIGN }
   | '+'
     { PLUS }
   | '-'
