@@ -27,6 +27,7 @@ rule read =
   | "while"
     { WHILE }
   | "return"
+    { RETURN }
   | "->"
     { ARROW }
   | '-'? ['0'-'9']+

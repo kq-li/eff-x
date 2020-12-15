@@ -9,7 +9,8 @@ let vars =
 
 let funcs =
   [
-    ("print", fun expr -> print_s [%message (expr : Expr.t)]);
+    ("print", fun values -> print_s [%message (values : Value.t list)]; Value.Unit);
   ]
+  |> String.Map.of_alist_exn
 
 [@@@ocamlformat "enable"]

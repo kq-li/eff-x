@@ -38,12 +38,16 @@ prog:
     { Core.String.Map.of_alist_exn funcs }
 
 func:
-  | name = ID; LPAREN; args = separated_list(COMMA, arg); RPAREN; COLON; ret_type = typ; LBRACE; body = stmt; RBRACE
+  | name = ID; LPAREN; args = separated_list(COMMA, arg); RPAREN; COLON; ret_type = typ; body = seq
     { (name, Func.{ name; args; ret_type; body }) }
 
 arg:
   | x = ID; t = typ
     { (x, t) }
+
+seq:
+  | LBRACE; ss = list(stmt); RBRACE
+    { Stmt.Seq ss }
 
 stmt:
   | x = ID; COLON; t = typ; ASSIGN; e = expr; SEMICOLON
@@ -54,10 +58,10 @@ stmt:
     { Stmt.If (v, s1, s2) }
   | WHILE; LPAREN; v = value; RPAREN; s = stmt
     { Stmt.While (v, s) }
-  | LBRACE; ss = list(stmt); RBRACE
-    { Stmt.Seq ss }
   | RETURN; v = value; SEMICOLON
     { Stmt.Return v }
+  | s = seq
+    { s }
 
 value:
   | LPAREN; RPAREN
@@ -74,7 +78,7 @@ expr:
     { Expr.Unary (uop, v) }
   | v1 = value; bop = binop; v2 = value
     { Expr.Binary (bop, v1, v2) }
-  | f = ID; vs = nonempty_list(value)
+  | f = ID; LPAREN; vs = separated_list(COMMA, value); RPAREN
     { Expr.Apply (f, vs) }
 
 typ:
