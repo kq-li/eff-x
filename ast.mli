@@ -40,7 +40,8 @@ module rec Value : sig
     | Unit
     | Int of int
     | Var of string
-    | Lambda of string * Type.t * Stmt.t
+    | Lambda of string * Type.t * Value.t String.Map.t * Stmt.t
+    | MiniLambda of string * Type.t * Value.t String.Map.t * Expr.t
   [@@deriving compare, equal, sexp_of]
 end
 

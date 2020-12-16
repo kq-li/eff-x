@@ -13,10 +13,13 @@ let check prog =
     | Value.Unit -> Ok Type.Unit
     | Int _ -> Ok Type.Int
     | Var x -> lookup ctx x
-    | Lambda (x, t, s) ->
-      let%bind (ctx, effs) = check_stmt (Map.set ctx ~key:x ~data:t, Effect.Set.empty) s in
+    | MiniLambda (x, t, _, e) ->
+      let%map (t_ret, effs) = check_expr (Map.set ctx ~key:x ~data:t) e in
+      Type.Fun (t, t_ret, effs)
+    | Lambda (x, t, _, s) ->
+      let%map (ctx, effs) = check_stmt (Map.set ctx ~key:x ~data:t, Effect.Set.empty) s in
       let t_ret = lookup_default ctx return_key ~default:Type.Unit in
-      Ok (Type.Fun (t, t_ret, effs))
+      Type.Fun (t, t_ret, effs)
   and assert_int ctx v =
     match%bind check_value ctx v with
     | Type.Int -> Ok ()
@@ -47,7 +50,7 @@ let check prog =
                   ~args:(tvs : Type.t list)])
   and check_stmt (ctx, all_effs) = function
     | Stmt.Skip -> Ok (ctx, all_effs)
-    | Assign (x, t, effs, e) ->
+    | Assign (x, t, effs, e) as stmt ->
       let%bind (t_e, effs_e) = check_expr ctx e in
       if Type.equal t t_e && Effect.Set.equal effs effs_e then
         match Map.find ctx x with
@@ -58,7 +61,7 @@ let check prog =
         Or_error.error_s
           [%message
             "assignment annotation mismatch"
-              ~annotation:((t, effs) : Type.t * Effect.Set.t)
+              ~assignment:(stmt : Stmt.t)
               ~actual:((t_e, effs_e) : Type.t * Effect.Set.t)]
     | RecAssign (x, t, effs, e) ->
       check_stmt (Map.set ctx ~key:x ~data:t, all_effs) (Assign (x, t, effs, e))

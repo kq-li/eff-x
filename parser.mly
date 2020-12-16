@@ -66,16 +66,9 @@ value:
   | v = arg_value
     { v }
   | LAMBDA; x = ID; COLON; t = typ; DOT; e = expr
-    { let s =
-        Stmt.Seq
-          [
-            Assign (x, t, Effect.Set.empty, e);
-            Return (Var x);
-          ]
-      in
-      Value.Lambda (x, t, s) }
+    { Value.MiniLambda (x, t, Core.String.Map.empty, e) }
   | LAMBDA; x = ID; COLON; t = typ; DOT; s = seq
-    { Value.Lambda (x, t, s) }
+    { Value.Lambda (x, t, Core.String.Map.empty, s) }
 
 arg_value:
   | LPAREN; RPAREN

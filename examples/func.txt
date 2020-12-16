@@ -1,0 +1,11 @@
+add: int -> int -> int = \a: int. \b: int. a + b;
+twice: (int -> int) -> int -> int = \f: int -> int. \x: int. {
+  x: int = f x;
+  x: int = f x;
+  return x;
+};
+
+add5: int -> int = add 5;
+add10: int -> int = twice add5;
+z: int = add10 2;
+_: unit !output = print z;
