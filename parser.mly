@@ -6,11 +6,12 @@
 %token <string> ID
 %token UNIT
 %token INT
-%token ARROW
 %token COMMA
 %token SEMICOLON
 %token COLON
 %token BANG
+%token READ
+%token WRITE
 %token OUTPUT
 %token IF
 %token ELSE
@@ -27,8 +28,7 @@
 %token DIVIDE
 %token EOF
 
-%right THEN ELSE
-%right ARROW BANG
+%right THEN ELSE 
 
 %start <Prog.t> prog
 %%
@@ -38,8 +38,9 @@ prog:
     { Core.String.Map.of_alist_exn funcs }
 
 func:
-  | name = ID; LPAREN; args = separated_list(COMMA, arg); RPAREN; COLON; ret_type = typ; body = seq
-    { (name, Func.{ name; args; ret_type; body }) }
+  | name = ID; LPAREN; args = separated_list(COMMA, arg); RPAREN; ret_type = eff_typ?; body = seq
+    { let (ret_type, effects) = Base.Option.value ret_type ~default:(Type.Unit, Effect.Set.empty) in
+      (name, Func.{ name; args; ret_type; effects; body }) }
 
 arg:
   | x = ID; t = typ
@@ -50,8 +51,9 @@ seq:
     { Stmt.Seq ss }
 
 stmt:
-  | x = ID; COLON; t = typ; ASSIGN; e = expr; SEMICOLON
-    { Stmt.Assign (x, t, e) }
+  | x = ID; COLON; t_effs = eff_typ; ASSIGN; e = expr; SEMICOLON
+    { let (t, effs) = t_effs in
+      Stmt.Assign (x, t, effs, e) }
   | IF; LPAREN; v = value; RPAREN; s1 = stmt %prec THEN
     { Stmt.If (v, s1, Stmt.Skip) }
   | IF; LPAREN; v = value; RPAREN; s1 = stmt; ELSE; s2 = stmt
@@ -86,10 +88,12 @@ typ:
     { Type.Unit }
   | INT
     { Type.Int }
-  | t1 = typ; ARROW; t2 = typ
-    { Type.Fun (t1, t2) }
-  | t = typ; BANG; effs = nonempty_list(effect)
-    { Type.With_effect (t, Effect.Set.of_list effs) }
+
+eff_typ:
+  | t = typ
+    { (t, Effect.Set.empty) }
+  | t = typ; BANG; effs = separated_nonempty_list(COMMA, effect)
+    { (t, Effect.Set.of_list effs) }
 
 %inline unop:
   | MINUS { Op.Unary.Negate }
@@ -102,4 +106,6 @@ typ:
 
 %inline effect:
   | OUTPUT { Effect.Output }
+  | READ   { Effect.Read }
+  | WRITE  { Effect.Write }
 

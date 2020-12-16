@@ -32,7 +32,7 @@ module Type = struct
   type t =
     | Unit
     | Int
-    | Fun of t * t
+    | Fun of t list * t
     | With_effect of t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
 end
@@ -57,7 +57,7 @@ end
 module Stmt = struct
   type t =
     | Skip
-    | Assign of string * Type.t * Expr.t
+    | Assign of string * Type.t * Effect.Set.t * Expr.t
     | If of Value.t * t * t
     | While of Value.t * t
     | Seq of t list
@@ -70,6 +70,7 @@ module Func = struct
     name : string;
     args : (string * Type.t) list;
     ret_type : Type.t;
+    effects : Effect.Set.t;
     body : Stmt.t;
   }
   [@@deriving compare, equal, sexp_of]

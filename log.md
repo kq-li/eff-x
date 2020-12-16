@@ -25,3 +25,7 @@
 - Theorized that exprs can have effects, and commands just provide an order on exprs
     - Can be implemented with unops/binops or native funcs
     - Sequences of assignments of exprs can be reordered and optimized
+
+## 12/15
+## 2 hours
+- Reimplemented interpreter for new lower-level language

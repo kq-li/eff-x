@@ -28,8 +28,6 @@ rule read =
     { WHILE }
   | "return"
     { RETURN }
-  | "->"
-    { ARROW }
   | '-'? ['0'-'9']+
     { NUM (Base.Int.of_string (Lexing.lexeme lexbuf)) }
   | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*

@@ -41,7 +41,7 @@ let eval prog =
       eval_func f args
   and eval_stmt ctx = function
     | Stmt.Skip -> Ok ctx
-    | Assign (x, _, e) ->
+    | Assign (x, _, _, e) ->
       let%bind v = eval_expr ctx e in
       Ok (Map.set ctx ~key:x ~data:v)
     | If (v, s1, s2) -> if%bind bool_of_value ctx v then eval_stmt ctx s1 else eval_stmt ctx s2
