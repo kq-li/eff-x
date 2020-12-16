@@ -7,10 +7,11 @@ let funcs =
   [
     (
       "print", (
-        None,
-        Type.Unit,
-        Effect.Set.singleton Effect.Output,
-        fun values -> print_s [%message (values : Value.t list)]; Value.Unit
+        Type.Fun (Int, Unit, Effect.Set.singleton Effect.Output),
+        function
+        | [Value.Int n] -> printf "%d\n" n; Value.Unit
+        | values ->
+          print_s [%message (values : Value.t list)]; Value.Unit
       )
     );
   ]

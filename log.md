@@ -27,5 +27,5 @@
     - Sequences of assignments of exprs can be reordered and optimized
 
 ## 12/15
-## 2 hours
-- Reimplemented interpreter for new lower-level language
+## 4 hours
+- Reimplemented interpreter and typechecker for new lower-level language

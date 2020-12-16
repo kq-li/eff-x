@@ -1,4 +1,4 @@
 open! Core
 open! Ast
 
-val check : Prog.t -> unit
+val check : Prog.t -> unit Or_error.t

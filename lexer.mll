@@ -28,16 +28,22 @@ rule read =
     { WHILE }
   | "return"
     { RETURN }
+  | "rec"
+    { REC }
+  | '\\'
+    { LAMBDA }
   | '-'? ['0'-'9']+
     { NUM (Base.Int.of_string (Lexing.lexeme lexbuf)) }
   | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
     { ID (Lexing.lexeme lexbuf) }
-  | ','
-    { COMMA }
+  | '.'
+    { DOT }
   | ':'
     { COLON }
   | ';'
     { SEMICOLON }
+  | "->"
+    { ARROW }
   | '!'
     { BANG }
   | '('

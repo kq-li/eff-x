@@ -1,0 +1,24 @@
+f_loop : int -> int = \x : int . {
+  acc : int = 1;
+  while (x) {
+    acc : int = acc * x;
+    x : int = x - 1;
+  }
+  return acc;
+};
+
+rec f_rec : int -> int = \x : int . {
+  if (x) {
+    y : int = x - 1;
+    y : int = f_rec y;
+    y : int = x * y;
+    return y;
+  } else {
+    return 1;
+  }
+};
+
+result : int = f_loop 5;
+_ : unit !output = print result;
+result : int = f_rec 5;
+_ : unit !output = print result;

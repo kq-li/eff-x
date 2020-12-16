@@ -34,32 +34,57 @@ module Type = struct
   type t =
     | Unit
     | Int
-    | Fun of t list * t
-    | With_effect of t * Effect.Set.t
+    | Fun of t * t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
 end
 
-module Value = struct
+module rec Value : sig
   type t =
     | Unit
     | Int of int
     | Var of string
+    | Lambda of string * Type.t * Stmt.t
+  [@@deriving compare, equal, sexp_of]
+end = struct
+  type t =
+    | Unit
+    | Int of int
+    | Var of string
+    | Lambda of string * Type.t * Stmt.t
   [@@deriving compare, equal, sexp_of]
 end
 
-module Expr = struct
+and Expr : sig
   type t =
     | Value of Value.t
     | Unary of Op.Unary.t * Value.t
     | Binary of Op.Binary.t * Value.t * Value.t
-    | Apply of string * Value.t list
+    | Apply of Value.t * Value.t list
+  [@@deriving compare, equal, sexp_of]
+end = struct
+  type t =
+    | Value of Value.t
+    | Unary of Op.Unary.t * Value.t
+    | Binary of Op.Binary.t * Value.t * Value.t
+    | Apply of Value.t * Value.t list
   [@@deriving compare, equal, sexp_of]
 end
 
-module Stmt = struct
+and Stmt : sig
   type t =
     | Skip
     | Assign of string * Type.t * Effect.Set.t * Expr.t
+    | RecAssign of string * Type.t * Effect.Set.t * Expr.t
+    | If of Value.t * t * t
+    | While of Value.t * t
+    | Seq of t list
+    | Return of Value.t
+  [@@deriving compare, equal, sexp_of]
+end = struct
+  type t =
+    | Skip
+    | Assign of string * Type.t * Effect.Set.t * Expr.t
+    | RecAssign of string * Type.t * Effect.Set.t * Expr.t
     | If of Value.t * t * t
     | While of Value.t * t
     | Seq of t list
@@ -67,17 +92,6 @@ module Stmt = struct
   [@@deriving compare, equal, sexp_of]
 end
 
-module Func = struct
-  type t = {
-    name : string;
-    args : (string * Type.t) list;
-    ret_type : Type.t;
-    effects : Effect.Set.t;
-    body : Stmt.t;
-  }
-  [@@deriving compare, equal, sexp_of]
-end
-
 module Prog = struct
-  type t = Func.t String.Map.t [@@deriving compare, equal, sexp_of]
+  type t = Stmt.t list [@@deriving compare, equal, sexp_of]
 end

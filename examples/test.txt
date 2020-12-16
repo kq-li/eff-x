@@ -1,11 +1,9 @@
-f(): int {
-  return 5;
-}
+f : (unit -> unit !output) = \z : unit . {
+  _ : unit !output = print 5;
+  y : int = 8;
+  x : int = 3 + y;
+  _ : unit !output = print y;
+  _ : unit !output = print x;
+};
 
-main(): int !output {
-  x: int = 42;
-  y: int = x + 30;
-  z: int = f();
-  _: unit !output = print(x, y, (), z);
-  return y;
-}
+_ : unit !output = f ();

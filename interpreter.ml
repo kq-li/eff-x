@@ -3,15 +3,27 @@ open! Ast
 
 let eval prog =
   let open Or_error.Let_syntax in
-  let extract_value ctx = function
-    | Value.Var x -> Map.find_or_error ctx x
+  let lookup_opt ctx x = Map.find ctx x in
+  let lookup ctx x =
+    match lookup_opt ctx x with
+    | None -> Or_error.error_s [%message "variable not found" x (ctx : Value.t String.Map.t)]
+    | Some v -> Ok v
+  in
+  let lookup_default ctx x ~default = lookup_opt ctx x |> Option.value ~default in
+  let extract ctx = function
+    | Value.Var x -> lookup ctx x
     | value -> Ok value
+  in
+  let extract_opt ctx x =
+    match extract ctx x with
+    | Ok v -> Some v
+    | _ -> None
   in
   let rec int_of_value ctx = function
     | Value.Unit -> Or_error.error_s [%message "cannot convert unit to int"]
     | Int n -> Ok n
     | value ->
-      let%bind v = extract_value ctx value in
+      let%bind v = extract ctx value in
       int_of_value ctx v
   in
   let bool_of_value ctx v =
@@ -19,7 +31,7 @@ let eval prog =
     n <> 0
   in
   let rec eval_expr ctx = function
-    | Expr.Value v -> extract_value ctx v
+    | Expr.Value v -> extract ctx v
     | Unary (Op.Unary.Negate, v) ->
       let%map n = int_of_value ctx v in
       Value.Int (-n)
@@ -34,11 +46,31 @@ let eval prog =
         | Divide -> Int.( / )
       in
       Value.Int (f n1 n2)
-    | Apply (f, vs) ->
-      let%bind args = List.map vs ~f:(extract_value ctx) |> Or_error.combine_errors in
-      eval_func f args
+    | Apply (vf, vs) ->
+      ( match (extract_opt ctx vf, vf) with
+      | (Some f, _) ->
+        let%bind vs = List.map vs ~f:(extract ctx) |> Or_error.combine_errors in
+        List.fold_result vs ~init:(ctx, f) ~f:(fun (ctx, f) v ->
+            match f with
+            | Lambda (x, _, s) ->
+              let ctx = Map.set ctx ~key:x ~data:v in
+              let%map ctx = eval_stmt ctx s in
+              let v_ret = lookup_default ctx return_key ~default:Value.Unit in
+              (ctx, v_ret)
+            | _ ->
+              Or_error.error_s
+                [%message "invalid function application" (vf : Value.t) (vs : Value.t list)])
+        |> Or_error.map ~f:snd
+      | (None, Var name) when Map.mem Library.funcs name ->
+        let f = snd (Map.find_exn Library.funcs name) in
+        let%map vs = List.map vs ~f:(extract ctx) |> Or_error.combine_errors in
+        f vs
+      | _ -> Or_error.error_s [%message "function not found" (vf : Value.t) (vs : Value.t list)] )
   and eval_stmt ctx = function
     | Stmt.Skip -> Ok ctx
+    | RecAssign (x, _, _, Value (Var y)) when String.equal x y ->
+      Or_error.error_s [%message "invalid recursion"]
+    | RecAssign (x, _, _, e)
     | Assign (x, _, _, e) ->
       let%bind v = eval_expr ctx e in
       Ok (Map.set ctx ~key:x ~data:v)
@@ -48,29 +80,21 @@ let eval prog =
         let%bind ctx = eval_stmt ctx s in
         eval_stmt ctx (While (v, s))
       else Ok ctx
-    | Seq ss -> List.fold_result ss ~init:ctx ~f:eval_stmt
-    | Return v ->
-      let%bind v = extract_value ctx v in
-      Ok (Map.set ctx ~key:return_key ~data:v)
-  and eval_func name values =
-    match (Map.find prog name, Map.find Library.funcs name) with
-    | (None, None) -> Or_error.error_s [%message "function not found" name]
-    | (Some Func.{ args; body; _ }, _) ->
-      let ctx =
-        match List.zip (List.map args ~f:fst) values with
-        | Unequal_lengths ->
-          raise_s
-            [%message
-              "function called with wrong number of arguments"
-                name
-                (args : (string * Type.t) list)
-                (values : Value.t list)]
-        | Ok arg_exprs -> String.Map.of_alist_exn arg_exprs
+    | Seq ss ->
+      let%map (_, ctx) =
+        List.fold_result ss ~init:(true, ctx) ~f:(fun (continue, ctx) stmt ->
+            let continue =
+              match stmt with
+              | Stmt.Return _ -> false
+              | _ -> continue
+            in
+            let%map ctx = eval_stmt ctx stmt in
+            (continue, ctx))
       in
-      let%map ctx = eval_stmt ctx body in
-      Map.find ctx return_key |> Option.value ~default:Value.Unit
-    | (None, Some (_, _, _, f)) -> Ok (f values)
+      ctx
+    | Return v ->
+      let%bind v = extract ctx v in
+      Ok (Map.set ctx ~key:return_key ~data:v)
   in
-  match eval_func "main" [] |> ok_exn with
-  | Value.Int code -> code
-  | value -> raise_s [%message "got invalid return value" (value : Value.t)]
+  let%map (_ : Value.t String.Map.t) = eval_stmt String.Map.empty (Stmt.Seq prog) in
+  ()

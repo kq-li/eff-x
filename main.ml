@@ -5,10 +5,9 @@ let () =
   let lexbuf = Lexing.from_channel In_channel.stdin in
   try
     let prog = Parser.prog Lexer.read lexbuf in
-    let () = Typechecker.check prog in
+    Typechecker.check prog |> ok_exn;
     print_endline "program typechecks";
-    let code = Interpreter.eval prog in
-    printf "%d\n" code
+    Interpreter.eval prog |> ok_exn
   with
   | Parser.Error ->
     let Lexing.{ pos_lnum; pos_cnum; pos_bol; _ } = lexbuf.lex_curr_p in
