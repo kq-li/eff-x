@@ -38,9 +38,13 @@ prog:
     { Core.String.Map.of_alist_exn funcs }
 
 func:
-  | name = ID; LPAREN; args = separated_list(COMMA, arg); RPAREN; ret_type = eff_typ?; body = seq
+  | name = ID; LPAREN; args = separated_list(COMMA, arg); RPAREN; ret_type = ret_typ?; body = seq
     { let (ret_type, effects) = Base.Option.value ret_type ~default:(Type.Unit, Effect.Set.empty) in
       (name, Func.{ name; args; ret_type; effects; body }) }
+
+ret_typ:
+  | COLON; t = eff_typ
+    { t }
 
 arg:
   | x = ID; t = typ

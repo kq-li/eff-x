@@ -1,5 +1,7 @@
 open! Core
 
+val return_key : string
+
 module Op : sig
   module Unary : sig
     type t = Negate [@@deriving compare, equal, sexp_of]

@@ -2,10 +2,10 @@ f(): int {
   return 5;
 }
 
-main(): int {
+main(): int !output {
   x: int = 42;
   y: int = x + 30;
   z: int = f();
-  _: unit = print(x, y, (), z);
+  _: unit !output = print(x, y, (), z);
   return y;
 }

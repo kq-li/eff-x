@@ -1,8 +1,6 @@
 open! Core
 open! Ast
 
-let return_key = "*retval"
-
 let eval prog =
   let open Or_error.Let_syntax in
   let extract_value ctx = function
@@ -71,7 +69,7 @@ let eval prog =
       in
       let%map ctx = eval_stmt ctx body in
       Map.find ctx return_key |> Option.value ~default:Value.Unit
-    | (None, Some f) -> Ok (f values)
+    | (None, Some (_, _, _, f)) -> Ok (f values)
   in
   match eval_func "main" [] |> ok_exn with
   | Value.Int code -> code

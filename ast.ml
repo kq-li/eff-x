@@ -1,5 +1,7 @@
 open! Core
 
+let return_key = "*retval"
+
 module Op = struct
   module Unary = struct
     type t = Negate [@@deriving compare, equal, sexp_of]
