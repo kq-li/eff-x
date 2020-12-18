@@ -11,20 +11,12 @@ let eval prog =
     | None -> Or_error.error_s [%message "variable not found" x (ctx : Value.t String.Map.t)]
     | Some v -> Ok v
   in
-  let lookup_default ctx x ~default = lookup_opt ctx x |> Option.value ~default in
   let extract ctx = function
-    | Value.Var x -> lookup ctx x
+    | Value.Var x ->
+      ( match Map.find Library.extern x with
+      | Some (_, v) -> Ok (Value.Extern v)
+      | _ -> lookup ctx x )
     | value -> Ok value
-  in
-  let extract_opt ctx x =
-    match extract ctx x with
-    | Ok v -> Some v
-    | _ -> None
-  in
-  let bool_of_value ctx v =
-    match%bind extract ctx v with
-    | Value.Bool b -> Ok b
-    | _ -> Or_error.error_s [%message "bool conversion failure" (v : Value.t)]
   in
   let merge ctx ctx' =
     (fun () ->
@@ -37,57 +29,43 @@ let eval prog =
     |> Or_error.try_with
   in
   let rec eval_expr ctx = function
-    | Expr.Value v ->
-      let%map v = extract ctx v in
-      (v, empty_ctx)
-    | Apply (vf, vs) ->
-      ( match (extract_opt ctx vf, vf) with
-      | (Some f, _) ->
-        let%bind vs = List.map vs ~f:(extract ctx) |> Or_error.combine_errors in
-        List.fold_result vs ~init:(f, empty_ctx) ~f:(fun (f, ctx) v ->
-            match f with
-            | Lambda (x, _, saved_ctx, s) ->
-              let%bind ctx = merge ctx saved_ctx in
-              let ctx = Map.set ctx ~key:x ~data:v in
-              let%map ret_ctx = eval_stmt ctx s in
-              let v_ret = lookup_default ret_ctx return_key ~default:Value.Unit in
-              (v_ret, ctx)
-            | MiniLambda (x, _, saved_ctx, e) ->
-              let%bind ctx = merge ctx saved_ctx in
-              let ctx = Map.set ctx ~key:x ~data:v in
-              let%map (v_ret, _) = eval_expr ctx e in
-              (v_ret, ctx)
-            | _ ->
-              Or_error.error_s
-                [%message "invalid function application" (vf : Value.t) (vs : Value.t list)])
-      | (None, Var name) when Map.mem Library.funcs name ->
-        let f = snd (Map.find_exn Library.funcs name) in
-        let%map vs = List.map vs ~f:(extract ctx) |> Or_error.combine_errors in
-        (f vs, ctx)
-      | _ ->
-        Or_error.error_s
-          [%message
-            "function not found" (vf : Value.t) (vs : Value.t list) (ctx : Value.t String.Map.t)] )
-  and eval_stmt ctx s =
-    match s with
+    | Expr.Value v -> extract ctx v
+    | Apply (e1, e2) ->
+      let%bind v1 = eval_expr ctx e1 in
+      let%bind v2 = eval_expr ctx e2 in
+      ( match v1 with
+      | Value.Lambda (x, _, ctx1, s) ->
+        let ctx1 = Map.set ctx1 ~key:x ~data:v2 in
+        let%bind ctx_ret = eval_stmt ctx1 s in
+        let%map v_ret =
+          match lookup_opt ctx_ret return_key with
+          | None -> Ok Value.Unit
+          | Some (Value.Lambda (x, t, ctx2, s)) ->
+            let%map ctx = merge ctx1 ctx2 in
+            Value.Lambda (x, t, ctx, s)
+          | Some v -> Ok v
+        in
+        v_ret
+      | Extern f ->
+        let%map v = eval_expr ctx e2 in
+        f v
+      | _ -> Or_error.error_s [%message "invalid function application" (e1 : Expr.t) (e2 : Expr.t)]
+      )
+  and bool_of_expr ctx e =
+    match%bind eval_expr ctx e with
+    | Value.Bool b -> Ok b
+    | _ -> Or_error.error_s [%message "bool conversion failure" (e : Expr.t)]
+  and eval_stmt ctx stmt =
+    match stmt with
     | Stmt.Skip -> Ok ctx
     | Assign (x, _, _, e) ->
-      let%map v =
-        match%bind eval_expr ctx e with
-        | (Value.Lambda (x, t, ctx, s), ctx') ->
-          let%map ctx = merge ctx ctx' in
-          Value.Lambda (x, t, ctx, s)
-        | (MiniLambda (x, t, ctx, e), ctx') ->
-          let%map ctx = merge ctx ctx' in
-          Value.MiniLambda (x, t, ctx, e)
-        | (v, _) -> Ok v
-      in
+      let%map v = eval_expr ctx e in
       Map.set ctx ~key:x ~data:v
-    | If (v, s1, s2) -> if%bind bool_of_value ctx v then eval_stmt ctx s1 else eval_stmt ctx s2
-    | While (v, s) ->
-      if%bind bool_of_value ctx v then
+    | If (e, s1, s2) -> if%bind bool_of_expr ctx e then eval_stmt ctx s1 else eval_stmt ctx s2
+    | While (e, s) ->
+      if%bind bool_of_expr ctx e then
         let%bind ctx = eval_stmt ctx s in
-        eval_stmt ctx (While (v, s))
+        eval_stmt ctx stmt
       else Ok ctx
     | Seq ss ->
       let%map (_, ctx) =
@@ -101,8 +79,8 @@ let eval prog =
             (continue, ctx))
       in
       ctx
-    | Return v ->
-      let%bind v = extract ctx v in
+    | Return e ->
+      let%bind v = eval_expr ctx e in
       Ok (Map.set ctx ~key:return_key ~data:v)
   in
   let%map (_ : Value.t String.Map.t) = eval_stmt empty_ctx (Stmt.Seq prog) in

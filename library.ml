@@ -5,53 +5,37 @@ let mem_size = 64
 let memory = Array.create ~len:mem_size 0
 let no_eff = Effect.Set.empty
 
-let int_int (name, f) =
-  ( name,
-    ( Type.Fun (Int, Int, no_eff),
-      function
-      | [ Value.Int n ] -> Value.Int (f n)
-      | _ -> failwith "impossible" ) )
+let assert_int = function
+  | Value.Int n -> n
+  | _ -> failwith "int assertion failure"
+
+let assert_bool = function
+  | Value.Bool b -> b
+  | _ -> failwith "bool assertion failure"
+
+let int_int (name, f) = (name, (Type.Fun (Int, Int, no_eff), fun v -> Value.Int (f (assert_int v))))
 
 let bool_bool (name, f) =
-  ( name,
-    ( Type.Fun (Bool, Bool, no_eff),
-      function
-      | [ Value.Bool b ] -> Value.Bool (f b)
-      | _ -> failwith "impossible" ) )
-
-let defer name t_lambda v =
-  let temp1 = "*temp1" in
-  let temp2 = "*temp2" in
-  Value.MiniLambda
-    (temp2, t_lambda, String.Map.singleton temp1 v, Apply (Var name, [ Var temp1; Var temp2 ]))
+  (name, (Type.Fun (Bool, Bool, no_eff), fun v -> Value.Bool (f (assert_bool v))))
 
 let int_int_int (name, f) =
   ( name,
     ( Type.Fun (Int, Type.Fun (Int, Int, no_eff), no_eff),
-      function
-      | [ v ] -> defer name (Type.Fun (Int, Int, no_eff)) v
-      | [ Value.Int a; Int b ] -> Value.Int (f a b)
-      | _ -> failwith "impossible" ) )
+      fun v1 -> Value.Extern (fun v2 -> Value.Int (f (assert_int v1) (assert_int v2))) ) )
 
 let int_int_bool (name, f) =
   ( name,
     ( Type.Fun (Int, Type.Fun (Int, Bool, no_eff), no_eff),
-      function
-      | [ v ] -> defer name (Type.Fun (Int, Bool, no_eff)) v
-      | [ Value.Int a; Int b ] -> Value.Bool (f a b)
-      | _ -> failwith "impossible" ) )
+      fun v1 -> Value.Extern (fun v2 -> Value.Bool (f (assert_int v1) (assert_int v2))) ) )
 
 let bool_bool_bool (name, f) =
   ( name,
     ( Type.Fun (Bool, Type.Fun (Bool, Bool, no_eff), no_eff),
-      function
-      | [ v ] -> defer name (Type.Fun (Bool, Bool, no_eff)) v
-      | [ Value.Bool a; Bool b ] -> Value.Bool (f a b)
-      | _ -> failwith "impossible" ) )
+      fun v1 -> Value.Extern (fun v2 -> Value.Bool (f (assert_bool v1) (assert_bool v2))) ) )
 
 [@@@ocamlformat "disable"]
 
-let funcs =
+let extern =
   List.concat [
     [
       ("neg", Int.( ~- ));
@@ -82,25 +66,19 @@ let funcs =
       (
         "print", (
           Type.Fun (Int, Unit, Effect.Set.singleton Effect.Output),
-          function 
-          | [Value.Int n] -> printf "%d\n" n; Value.Unit
-          | _ -> failwith "impossible"
+          fun v -> printf "%d\n" (assert_int v); Value.Unit
         )
       );
       (
         "load", (
           Type.Fun (Int, Int, Effect.Set.singleton Effect.Read),
-          function
-          | [Value.Int n] -> Value.Int memory.(n)
-          | _ -> failwith "impossible"
+          fun v -> Value.Int memory.(assert_int v)
         )
       );
       (
         "store", (
           Type.Fun (Int, Type.Fun (Int, Unit, Effect.Set.singleton Effect.Write), Effect.Set.empty),
-          function
-          | [Value.Int addr; Value.Int data] -> memory.(addr) <- data; Value.Unit
-          | _ -> failwith "impossible"
+          fun v1 -> Value.Extern (fun v2 -> memory.(assert_int v1) <- assert_int v2; Value.Unit)
         )
       );
     ];

@@ -4,6 +4,7 @@ f : (unit -> unit !output) = \z : unit . {
   x : int = add 3 y;
   _ : unit !output = print y;
   _ : unit !output = print x;
+  _ : unit !output = print (add (mul x y) 8);
 };
 
 _ : unit !output = f ();

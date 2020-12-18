@@ -43,3 +43,6 @@
         - Had to manually implement currying for the library functions
     - Added load/store library functions to simulate memory
 - Set up Turnt for regression tests
+- Thought about advantages of the system
+    - Precompute pure functions
+    - Potentially compute in parallel

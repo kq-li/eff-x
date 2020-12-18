@@ -1,10 +1,9 @@
-twice: (int -> int) -> int -> int = \f: int -> int. \x: int. {
-  x: int = f x;
-  x: int = f x;
+twice : (int -> int) -> int -> int = \f : int -> int. \x : int. {
+  x : int = f x;
+  x : int = f x;
   return x;
 };
 
-add5: int -> int = add 5;
-add10: int -> int = twice add5;
-z: int = add10 2;
-_: unit !output = print z;
+add5 : int -> int = add 5;
+add10 : int -> int = twice add5;
+_ : unit !output = print (add10 2);

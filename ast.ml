@@ -31,7 +31,7 @@ module rec Value : sig
     | Bool of bool
     | Var of string
     | Lambda of string * Type.t * Value.t String.Map.t * Stmt.t
-    | MiniLambda of string * Type.t * Value.t String.Map.t * Expr.t
+    | Extern of (t -> t)
   [@@deriving compare, equal, sexp_of]
 end = struct
   type t =
@@ -40,19 +40,19 @@ end = struct
     | Bool of bool
     | Var of string
     | Lambda of string * Type.t * Value.t String.Map.t * Stmt.t
-    | MiniLambda of string * Type.t * Value.t String.Map.t * Expr.t
+    | Extern of ((t -> t)[@compare.ignore] [@equal.ignore])
   [@@deriving compare, equal, sexp_of]
 end
 
 and Expr : sig
   type t =
     | Value of Value.t
-    | Apply of Value.t * Value.t list
+    | Apply of t * t
   [@@deriving compare, equal, sexp_of]
 end = struct
   type t =
     | Value of Value.t
-    | Apply of Value.t * Value.t list
+    | Apply of t * t
   [@@deriving compare, equal, sexp_of]
 end
 
@@ -60,19 +60,19 @@ and Stmt : sig
   type t =
     | Skip
     | Assign of string * Type.t * Effect.Set.t * Expr.t
-    | If of Value.t * t * t
-    | While of Value.t * t
+    | If of Expr.t * t * t
+    | While of Expr.t * t
     | Seq of t list
-    | Return of Value.t
+    | Return of Expr.t
   [@@deriving compare, equal, sexp_of]
 end = struct
   type t =
     | Skip
     | Assign of string * Type.t * Effect.Set.t * Expr.t
-    | If of Value.t * t * t
-    | While of Value.t * t
+    | If of Expr.t * t * t
+    | While of Expr.t * t
     | Seq of t list
-    | Return of Value.t
+    | Return of Expr.t
   [@@deriving compare, equal, sexp_of]
 end
 

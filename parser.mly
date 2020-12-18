@@ -31,6 +31,8 @@
 
 %right THEN ELSE
 %right ARROW
+%nonassoc TRUE FALSE NUM ID LPAREN
+%left APPLY
 
 %start <Prog.t> prog
 %%
@@ -44,28 +46,26 @@ seq:
     { Stmt.Seq ss }
 
 stmt:
-  | x = ID; COLON; t = typ; effs = list(eff); ASSIGN; e = expr; SEMICOLON
+  | x = ID; COLON; t = typ; effs = list(eff); ASSIGN; e = toplevel_expr; SEMICOLON
     { Stmt.Assign (x, t, Effect.Set.of_list effs, e) }
-  | IF; LPAREN; v = value; RPAREN; s1 = stmt %prec THEN
-    { Stmt.If (v, s1, Stmt.Skip) }
-  | IF; LPAREN; v = value; RPAREN; s1 = stmt; ELSE; s2 = stmt
-    { Stmt.If (v, s1, s2) }
-  | WHILE; LPAREN; v = value; RPAREN; s = stmt
-    { Stmt.While (v, s) }
-  | RETURN; v = value; SEMICOLON
-    { Stmt.Return v }
+  | IF; LPAREN; e = toplevel_expr; RPAREN; s1 = stmt %prec THEN
+    { Stmt.If (e, s1, Stmt.Skip) }
+  | IF; LPAREN; e = toplevel_expr; RPAREN; s1 = stmt; ELSE; s2 = stmt
+    { Stmt.If (e, s1, s2) }
+  | WHILE; LPAREN; e = toplevel_expr; RPAREN; s = stmt
+    { Stmt.While (e, s) }
+  | RETURN; e = toplevel_expr; SEMICOLON
+    { Stmt.Return e }
   | s = seq
     { s }
 
-value:
-  | v = arg_value
-    { v }
-  | LAMBDA; x = ID; COLON; t = typ; DOT; e = expr
-    { Value.MiniLambda (x, t, Core.String.Map.empty, e) }
+lambda:
+  | LAMBDA; x = ID; COLON; t = typ; DOT; e = toplevel_expr
+    { Value.Lambda (x, t, Core.String.Map.empty, Stmt.Return e) }
   | LAMBDA; x = ID; COLON; t = typ; DOT; s = seq
     { Value.Lambda (x, t, Core.String.Map.empty, s) }
 
-arg_value:
+value:
   | LPAREN; RPAREN
     { Value.Unit }
   | n = NUM
@@ -76,14 +76,22 @@ arg_value:
     { Value.Bool false }
   | x = ID
     { Value.Var x }
-  | LPAREN; v = value; RPAREN
+  | LPAREN; v = lambda; RPAREN
     { v }
 
 expr:
   | v = value 
     { Expr.Value v }
-  | vf = arg_value; vs = arg_value+
-    { Expr.Apply (vf, vs) }
+  | LPAREN; e = expr; RPAREN
+    { e }
+  | e1 = expr; e2 = expr %prec APPLY
+    { Expr.Apply (e1, e2) }
+
+toplevel_expr:
+  | e = expr
+    { e }
+  | v = lambda
+    { Expr.Value v }
 
 typ:
   | UNIT
