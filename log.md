@@ -36,7 +36,7 @@
 - Implemented higher-order functions, currying, and partial application
 
 ## 12/17
-### 3 hours
+### 4 hours
 - Implemented booleans
 - Extended standard library (builtins)
     - Moved unary and binary ops to function land for more streamlined code
@@ -46,3 +46,10 @@
 - Thought about advantages of the system
     - Precompute pure functions
     - Potentially compute in parallel
+
+## 12/18
+### 4 hours
+- Reimplemented library to yet again fix currying
+- Added input effect
+- Wrote basic optimizer to precompute pure expressions
+    - Set up script to compare statement counts of base and optimized programs
