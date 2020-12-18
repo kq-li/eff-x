@@ -16,6 +16,7 @@
 %token BANG
 %token READ
 %token WRITE
+%token INPUT
 %token OUTPUT
 %token LAMBDA
 %token IF
@@ -112,6 +113,7 @@ eff:
     { e }
 
 %inline effect:
+  | INPUT  { Effect.Input }
   | OUTPUT { Effect.Output }
   | READ   { Effect.Read }
   | WRITE  { Effect.Write }

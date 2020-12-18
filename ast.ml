@@ -5,6 +5,7 @@ let return_key = "*retval"
 module Effect = struct
   module T = struct
     type t =
+      | Input
       | Output
       | Read
       | Write

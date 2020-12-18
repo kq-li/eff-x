@@ -5,6 +5,10 @@ let mem_size = 64
 let memory = Array.create ~len:mem_size 0
 let no_eff = Effect.Set.empty
 
+let assert_unit = function
+  | Value.Unit -> ()
+  | _ -> failwith "unit assertion failure"
+
 let assert_int = function
   | Value.Int n -> n
   | _ -> failwith "int assertion failure"
@@ -63,6 +67,20 @@ let extern =
       ("or", ( || ));
     ] |> List.map ~f:bool_bool_bool;
     [
+      (
+        "scan", (
+          Type.Fun (Unit, Int, Effect.Set.singleton Effect.Input),
+          fun v -> 
+            assert_unit v;
+            try
+              Out_channel.flush Out_channel.stdout;
+              Value.Int (
+                In_channel.input_line_exn In_channel.stdin
+                |> Int.of_string
+              )
+            with _ -> failwith "invalid input"
+        )
+      );
       (
         "print", (
           Type.Fun (Int, Unit, Effect.Set.singleton Effect.Output),

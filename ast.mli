@@ -4,6 +4,7 @@ val return_key : string
 
 module Effect : sig
   type t =
+    | Input
     | Output
     | Read
     | Write
