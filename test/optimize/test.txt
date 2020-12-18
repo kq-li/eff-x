@@ -1,0 +1,10 @@
+f : (unit -> unit !output) = \z : unit . {
+  _ : unit !output = print 5;
+  y : int = 8;
+  x : int = add 3 y;
+  _ : unit !output = print y;
+  _ : unit !output = print x;
+  _ : unit !output = print (add (mul x y) 8);
+};
+
+_ : unit !output = f ();

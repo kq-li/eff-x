@@ -7,4 +7,5 @@ fact : int -> int = \x : int . {
   return acc;
 };
 
-_ : unit !input !output = print (fact (scan ()));
+x : int = fact 5;
+_ : unit !output = print x;

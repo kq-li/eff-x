@@ -6,5 +6,7 @@ compose: (int -> int) -> (int -> int) -> int -> int = \f: int -> int. \g: int ->
 
 add5: int -> int = add 5;
 times2: int -> int = mul 2;
-_: unit !output = print (compose add5 times2 3);
-_: unit !output = print (compose times2 add5 3);
+a : int = compose add5 times2 3;
+b : int = compose times2 add5 3;
+_: unit !output = print a;
+_: unit !output = print b;

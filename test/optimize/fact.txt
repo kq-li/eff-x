@@ -1,0 +1,11 @@
+fact : int -> int = \x : int . {
+  acc : int = 1;
+  while (gt x 1) {
+    acc : int = mul acc x;
+    x : int = sub x 1;
+  }
+  return acc;
+};
+
+x : int = fact 5;
+_ : unit !output = print x;

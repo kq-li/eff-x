@@ -1,0 +1,12 @@
+compose: (int -> int) -> (int -> int) -> int -> int = \f: int -> int. \g: int -> int. \x: int. {
+  x: int = g x;
+  x: int = f x;
+  return x;
+};
+
+add5: int -> int = add 5;
+times2: int -> int = mul 2;
+a : int = compose add5 times2 3;
+b : int = compose times2 add5 3;
+_: unit !output = print a;
+_: unit !output = print b;

@@ -1,0 +1,6 @@
+twice : (unit -> unit !output) -> (unit -> unit !output) = \f : (unit -> unit !output). \x : unit. {
+  _ : unit !output = f x;
+  _ : unit !output = f x;
+};
+
+_ : unit !output = twice (\x : unit. print 1) ();
