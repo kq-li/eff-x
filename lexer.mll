@@ -18,8 +18,14 @@ rule read =
     { UNIT }
   | "int"
     { INT }
+  | "bool"
+    { BOOL }
   | "output"
     { OUTPUT }
+  | "read"
+    { READ }
+  | "write"
+    { WRITE }
   | "if"
     { IF }
   | "else"
@@ -28,12 +34,14 @@ rule read =
     { WHILE }
   | "return"
     { RETURN }
-  | "rec"
-    { REC }
   | '\\'
     { LAMBDA }
   | '-'? ['0'-'9']+
     { NUM (Base.Int.of_string (Lexing.lexeme lexbuf)) }
+  | "true"
+    { TRUE }
+  | "false"
+    { FALSE }
   | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
     { ID (Lexing.lexeme lexbuf) }
   | '.'
@@ -56,14 +64,6 @@ rule read =
     { RBRACE }
   | '='
     { ASSIGN }
-  | '+'
-    { PLUS }
-  | '-'
-    { MINUS }
-  | '*'
-    { MULTIPLY }
-  | '/'
-    { DIVIDE }
   | _
     { Core.failwithf "syntax error at lexeme: %s" (Lexing.lexeme lexbuf) () }
   | eof

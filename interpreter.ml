@@ -21,57 +21,36 @@ let eval prog =
     | Ok v -> Some v
     | _ -> None
   in
-  let rec int_of_value ctx = function
-    | Value.Unit -> Or_error.error_s [%message "cannot convert unit to int"]
-    | Int n -> Ok n
-    | value ->
-      let%bind v = extract ctx value in
-      int_of_value ctx v
-  in
   let bool_of_value ctx v =
-    let%map n = int_of_value ctx v in
-    n <> 0
+    match%bind extract ctx v with
+    | Value.Bool b -> Ok b
+    | _ -> Or_error.error_s [%message "bool conversion failure" (v : Value.t)]
+  in
+  let merge ctx ctx' =
+    (fun () ->
+      Map.merge ctx ctx' ~f:(fun ~key:var -> function
+        | `Left v
+        | `Right v ->
+          Some v
+        | `Both (v, v') ->
+          if Value.equal v v' then Some v else raise_s [%message "shadowed variable in closure" var]))
+    |> Or_error.try_with
   in
   let rec eval_expr ctx = function
     | Expr.Value v ->
       let%map v = extract ctx v in
       (v, empty_ctx)
-    | Unary (Op.Unary.Negate, v) ->
-      let%map n = int_of_value ctx v in
-      (Value.Int (-n), empty_ctx)
-    | Binary (binop, v1, v2) ->
-      let%bind n1 = int_of_value ctx v1 in
-      let%map n2 = int_of_value ctx v2 in
-      let f =
-        match binop with
-        | Op.Binary.Plus -> Int.( + )
-        | Minus -> Int.( - )
-        | Multiply -> Int.( * )
-        | Divide -> Int.( / )
-      in
-      (Value.Int (f n1 n2), empty_ctx)
-    | Apply (vf, vs) as expr ->
+    | Apply (vf, vs) ->
       ( match (extract_opt ctx vf, vf) with
       | (Some f, _) ->
         let%bind vs = List.map vs ~f:(extract ctx) |> Or_error.combine_errors in
         List.fold_result vs ~init:(f, empty_ctx) ~f:(fun (f, ctx) v ->
-            let merge ctx ctx' =
-              (fun () ->
-                Map.merge ctx ctx' ~f:(fun ~key:var -> function
-                  | `Left v
-                  | `Right v ->
-                    Some v
-                  | `Both (v, v') ->
-                    if Value.equal v v' then Some v
-                    else raise_s [%message "shadowed variable in closure" (expr : Expr.t) var]))
-              |> Or_error.try_with
-            in
             match f with
             | Lambda (x, _, saved_ctx, s) ->
               let%bind ctx = merge ctx saved_ctx in
               let ctx = Map.set ctx ~key:x ~data:v in
-              let%map ctx_ret = eval_stmt ctx s in
-              let v_ret = lookup_default ctx_ret return_key ~default:Value.Unit in
+              let%map ret_ctx = eval_stmt ctx s in
+              let v_ret = lookup_default ret_ctx return_key ~default:Value.Unit in
               (v_ret, ctx)
             | MiniLambda (x, _, saved_ctx, e) ->
               let%bind ctx = merge ctx saved_ctx in
@@ -85,18 +64,23 @@ let eval prog =
         let f = snd (Map.find_exn Library.funcs name) in
         let%map vs = List.map vs ~f:(extract ctx) |> Or_error.combine_errors in
         (f vs, ctx)
-      | _ -> Or_error.error_s [%message "function not found" (vf : Value.t) (vs : Value.t list)] )
-  and eval_stmt ctx = function
+      | _ ->
+        Or_error.error_s
+          [%message
+            "function not found" (vf : Value.t) (vs : Value.t list) (ctx : Value.t String.Map.t)] )
+  and eval_stmt ctx s =
+    match s with
     | Stmt.Skip -> Ok ctx
-    | RecAssign (x, _, _, Value (Var y)) when String.equal x y ->
-      Or_error.error_s [%message "invalid recursion"]
-    | RecAssign (x, _, _, e)
     | Assign (x, _, _, e) ->
       let%map v =
-        match%map eval_expr ctx e with
-        | (Value.Lambda (x, t, _, s), ctx) -> Value.Lambda (x, t, ctx, s)
-        | (MiniLambda (x, t, _, e), ctx) -> Value.MiniLambda (x, t, ctx, e)
-        | (v, _) -> v
+        match%bind eval_expr ctx e with
+        | (Value.Lambda (x, t, ctx, s), ctx') ->
+          let%map ctx = merge ctx ctx' in
+          Value.Lambda (x, t, ctx, s)
+        | (MiniLambda (x, t, ctx, e), ctx') ->
+          let%map ctx = merge ctx ctx' in
+          Value.MiniLambda (x, t, ctx, e)
+        | (v, _) -> Ok v
       in
       Map.set ctx ~key:x ~data:v
     | If (v, s1, s2) -> if%bind bool_of_value ctx v then eval_stmt ctx s1 else eval_stmt ctx s2
@@ -122,5 +106,4 @@ let eval prog =
       Ok (Map.set ctx ~key:return_key ~data:v)
   in
   let%map (_ : Value.t String.Map.t) = eval_stmt empty_ctx (Stmt.Seq prog) in
-  (* print_s [%message (ctx : Value.t String.Map.t)]; *)
   ()

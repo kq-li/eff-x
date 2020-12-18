@@ -6,7 +6,6 @@ let () =
   try
     let prog = Parser.prog Lexer.read lexbuf in
     Typechecker.check prog |> ok_exn;
-    print_endline "program typechecks";
     Interpreter.eval prog |> ok_exn
   with
   | Parser.Error ->

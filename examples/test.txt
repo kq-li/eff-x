@@ -1,7 +1,7 @@
 f : (unit -> unit !output) = \z : unit . {
   _ : unit !output = print 5;
   y : int = 8;
-  x : int = 3 + y;
+  x : int = add 3 y;
   _ : unit !output = print y;
   _ : unit !output = print x;
 };

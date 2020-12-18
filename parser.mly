@@ -4,8 +4,11 @@
 
 %token <int> NUM
 %token <string> ID
+%token TRUE
+%token FALSE
 %token UNIT
 %token INT
+%token BOOL
 %token DOT
 %token SEMICOLON
 %token COLON
@@ -15,7 +18,6 @@
 %token WRITE
 %token OUTPUT
 %token LAMBDA
-%token REC
 %token IF
 %token ELSE
 %token WHILE
@@ -25,15 +27,10 @@
 %token LBRACE
 %token RBRACE
 %token ASSIGN
-%token PLUS
-%token MINUS
-%token MULTIPLY
-%token DIVIDE
 %token EOF
 
 %right THEN ELSE
 %right ARROW
-%right VALUE PLUS MINUS MULTIPLY DIVIDE 
 
 %start <Prog.t> prog
 %%
@@ -49,8 +46,6 @@ seq:
 stmt:
   | x = ID; COLON; t = typ; effs = list(eff); ASSIGN; e = expr; SEMICOLON
     { Stmt.Assign (x, t, Effect.Set.of_list effs, e) }
-  | REC; x = ID; COLON; t = typ; effs = list(eff); ASSIGN; e = expr; SEMICOLON
-    { Stmt.RecAssign (x, t, Effect.Set.of_list effs, e) }
   | IF; LPAREN; v = value; RPAREN; s1 = stmt %prec THEN
     { Stmt.If (v, s1, Stmt.Skip) }
   | IF; LPAREN; v = value; RPAREN; s1 = stmt; ELSE; s2 = stmt
@@ -75,18 +70,18 @@ arg_value:
     { Value.Unit }
   | n = NUM
     { Value.Int n }
+  | TRUE
+    { Value.Bool true }
+  | FALSE
+    { Value.Bool false }
   | x = ID
     { Value.Var x }
   | LPAREN; v = value; RPAREN
     { v }
 
 expr:
-  | v = value %prec VALUE
+  | v = value 
     { Expr.Value v }
-  | uop = unop; v = value
-    { Expr.Unary (uop, v) }
-  | v1 = value; bop = binop; v2 = value
-    { Expr.Binary (bop, v1, v2) }
   | vf = arg_value; vs = arg_value+
     { Expr.Apply (vf, vs) }
 
@@ -95,6 +90,8 @@ typ:
     { Type.Unit }
   | INT
     { Type.Int }
+  | BOOL
+    { Type.Bool }
   | t1 = typ; ARROW; t2 = typ
     { Type.Fun (t1, t2, Effect.Set.empty) }
   | LPAREN; t1 = typ; ARROW; t2 = typ; effs = nonempty_list(eff); RPAREN
@@ -105,15 +102,6 @@ typ:
 eff:
   | BANG; e = effect
     { e }
-
-%inline unop:
-  | MINUS { Op.Unary.Negate }
-
-%inline binop:
-  | PLUS     { Op.Binary.Plus }
-  | MINUS    { Op.Binary.Minus }
-  | MULTIPLY { Op.Binary.Multiply }
-  | DIVIDE   { Op.Binary.Divide }
 
 %inline effect:
   | OUTPUT { Effect.Output }

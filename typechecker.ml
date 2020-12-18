@@ -12,6 +12,7 @@ let check prog =
   let rec check_value ctx = function
     | Value.Unit -> Ok Type.Unit
     | Int _ -> Ok Type.Int
+    | Bool _ -> Ok Type.Bool
     | Var x -> lookup ctx x
     | MiniLambda (x, t, _, e) ->
       let%map (t_ret, effs) = check_expr (Map.set ctx ~key:x ~data:t) e in
@@ -20,21 +21,14 @@ let check prog =
       let%map (ctx, effs) = check_stmt (Map.set ctx ~key:x ~data:t, Effect.Set.empty) s in
       let t_ret = lookup_default ctx return_key ~default:Type.Unit in
       Type.Fun (t, t_ret, effs)
-  and assert_int ctx v =
+  and assert_bool ctx v =
     match%bind check_value ctx v with
-    | Type.Int -> Ok ()
-    | _ -> Or_error.error_s [%message "int assertion failure" (v : Value.t)]
+    | Type.Bool -> Ok ()
+    | _ -> Or_error.error_s [%message "bool assertion failure" (v : Value.t)]
   and check_expr ctx = function
     | Expr.Value v ->
       let%map t = check_value ctx v in
       (t, Effect.Set.empty)
-    | Unary (Negate, v) ->
-      let%map () = assert_int ctx v in
-      (Type.Int, Effect.Set.empty)
-    | Binary ((Plus | Minus | Multiply | Divide), v1, v2) ->
-      let%bind () = assert_int ctx v1 in
-      let%map () = assert_int ctx v2 in
-      (Type.Int, Effect.Set.empty)
     | Apply (vf, vs) ->
       let%bind tf = check_value ctx vf in
       let tf_orig = tf in
@@ -63,10 +57,8 @@ let check prog =
             "assignment annotation mismatch"
               ~assignment:(stmt : Stmt.t)
               ~actual:((t_e, effs_e) : Type.t * Effect.Set.t)]
-    | RecAssign (x, t, effs, e) ->
-      check_stmt (Map.set ctx ~key:x ~data:t, all_effs) (Assign (x, t, effs, e))
     | If (v, s1, s2) ->
-      let%bind () = assert_int ctx v in
+      let%bind () = assert_bool ctx v in
       let%bind (ctx1, effs1) = check_stmt (ctx, all_effs) s1 in
       let%bind (ctx2, effs2) = check_stmt (ctx, all_effs) s2 in
       (fun () ->
@@ -78,7 +70,7 @@ let check prog =
           Effect.Set.union_list [ all_effs; effs1; effs2 ] ))
       |> Or_error.try_with
     | While (v, s) ->
-      let%bind () = assert_int ctx v in
+      let%bind () = assert_bool ctx v in
       let%map (_, all_effs) = check_stmt (ctx, all_effs) s in
       (ctx, all_effs)
     | Seq ss -> List.fold_result ss ~init:(ctx, all_effs) ~f:check_stmt

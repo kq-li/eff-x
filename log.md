@@ -16,7 +16,7 @@
 - Note: `int!output` indicates an `int`-valued expression with an `output` side effect, like `print 5; 6`, but evaluating this expression changes the type to just `int`
 
 ## 12/13
-## 2 hours
+### 2 hours
 - Weighed pros and cons of eager vs. lazy evaluation/compilation
     - Lazy makes it possible for unevaluated expressions to have effect types
     - Eager means only deferred computations (i.e. thunks) can have effects
@@ -27,5 +27,19 @@
     - Sequences of assignments of exprs can be reordered and optimized
 
 ## 12/15
-## 4 hours
+### 4 hours
 - Reimplemented interpreter and typechecker for new lower-level language
+
+## 12/16
+### 4 hours
+- Pivoted back towards functional syntax
+- Implemented higher-order functions, currying, and partial application
+
+## 12/17
+### 3 hours
+- Implemented booleans
+- Extended standard library (builtins)
+    - Moved unary and binary ops to function land for more streamlined code
+        - Had to manually implement currying for the library functions
+    - Added load/store library functions to simulate memory
+- Set up Turnt for regression tests

@@ -1,0 +1,36 @@
+_ : unit !write = store 0 5;
+_ : unit !write = store 1 3;
+_ : unit !write = store 2 9;
+_ : unit !write = store 3 6;
+_ : unit !write = store 4 1;
+_ : unit !write = store 5 2;
+
+i : int = 0;
+b_i : bool = lt i 6;
+while (b_i) {
+  x_i : int !read = load i;
+  j : int = sub i 1;
+  b_j : bool = ge j 0;
+  while (b_j) {
+    x_j : int !read = load j;
+    b_comp : bool = lt x_i x_j;
+    if (b_comp) {
+      j2 : int = add j 1;
+      _ : unit !write = store j2 x_j;
+      _ : unit !write = store j x_i;
+    }
+    j : int = sub j 1;
+    b_j : bool = ge j 0;
+  }
+  i : int = add i 1;
+  b_i : bool = lt i 6;
+}
+
+i : int = 0;
+b : bool = lt i 6;
+while (b) {
+  x : int !read = load i;
+  _ : unit !output = print x;
+  i : int = add i 1;
+  b : bool = lt i 6;
+}
