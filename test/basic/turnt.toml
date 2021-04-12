@@ -1,1 +1,1 @@
-command = "dune exec ../../main.exe {filename} -- --count"
+command = "dune exec ../../main.exe -- {filename} | python3 ../../interpreter.py"

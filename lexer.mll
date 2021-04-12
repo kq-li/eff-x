@@ -37,6 +37,10 @@ rule read =
     { ELSE }
   | "while"
     { WHILE }
+  | "for"
+    { FOR }
+  | "cfor"
+    { CFOR }
   | "return"
     { RETURN }
   | '\\'

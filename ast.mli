@@ -11,6 +11,8 @@ module Effect : sig
   [@@deriving compare, equal, sexp_of]
 
   include Comparable.S_plain with type t := t
+
+  val to_json : t -> Yojson.Basic.t
 end
 
 module Type : sig
@@ -20,6 +22,8 @@ module Type : sig
     | Bool
     | Fun of t * t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
+
+  val to_json : t -> Yojson.Basic.t
 end
 
 module rec Value : sig
@@ -29,8 +33,9 @@ module rec Value : sig
     | Bool of bool
     | Var of string
     | Lambda of string * Type.t * Value.t String.Map.t * Stmt.t
-    | Extern of (t -> t)
   [@@deriving compare, equal, sexp_of]
+
+  val to_json : t -> Yojson.Basic.t
 end
 
 and Expr : sig
@@ -38,6 +43,8 @@ and Expr : sig
     | Value of Value.t
     | Apply of t * t
   [@@deriving compare, equal, sexp_of]
+
+  val to_json : t -> Yojson.Basic.t
 end
 
 and Stmt : sig
@@ -46,11 +53,17 @@ and Stmt : sig
     | Assign of string * Type.t * Effect.Set.t * Expr.t
     | If of Expr.t * t * t
     | While of Expr.t * t
+    | For of string * int * int * t
+    | CFor of string * int * int * t
     | Seq of t list
     | Return of Expr.t
   [@@deriving compare, equal, sexp_of]
+
+  val to_json : t -> Yojson.Basic.t
 end
 
 module Prog : sig
   type t = Stmt.t list [@@deriving compare, equal, sexp_of]
+
+  val to_json : t -> Yojson.Basic.t
 end

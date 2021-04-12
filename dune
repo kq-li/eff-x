@@ -1,6 +1,6 @@
 (executable
   (name main)
-  (libraries core)
+  (libraries core yojson)
   (preprocess (pps ppx_jane)))
 
 (ocamllex lexer)

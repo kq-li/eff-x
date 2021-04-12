@@ -18,7 +18,6 @@ let rec check_value ctx = function
     let%map (ctx, effs) = check_stmt (Map.set ctx ~key:x ~data:t, Effect.Set.empty) s in
     let t_ret = lookup_default ctx return_key ~default:Type.Unit in
     Type.Fun (t, t_ret, effs)
-  | Extern _ -> failwith "impossible"
 
 and check_expr ctx = function
   | Expr.Value v ->
@@ -45,7 +44,7 @@ and check_stmt (ctx, all_effs) = function
     let%bind (t_e, effs_e) = check_expr ctx e in
     if Type.equal t t_e && Effect.Set.equal effs effs_e then
       match Map.find ctx x with
-      | Some t_ctx when not (Type.equal t t_ctx) ->
+      | Some t_ctx when not (Type.equal t t_ctx || String.equal x "_") ->
         Or_error.error_s [%message "assignment type mismatch" x (t : Type.t) (t_ctx : Type.t)]
       | _ -> Ok (Map.set ctx ~key:x ~data:t, Set.union all_effs effs)
     else
@@ -70,14 +69,21 @@ and check_stmt (ctx, all_effs) = function
     let%bind effs = assert_bool ctx e in
     let%map (_, all_effs) = check_stmt (ctx, all_effs) s in
     (ctx, Set.union effs all_effs)
+  | For (x, _, _, s)
+  | CFor (x, _, _, s) ->
+    let%bind ctx =
+      match Map.find ctx x with
+      | Some _ -> Or_error.error_s [%message "loop variable already bound" x]
+      | None -> Ok (Map.set ctx ~key:x ~data:Int)
+    in
+    check_stmt (ctx, all_effs) s
   | Seq ss -> List.fold_result ss ~init:(ctx, all_effs) ~f:check_stmt
   | Return e ->
     let%map (t, effs) = check_expr ctx e in
     (Map.set ctx ~key:return_key ~data:t, Set.union effs all_effs)
 
 let check prog =
-  let lib_ctx = Map.map Library.extern ~f:fst in
   let%map (_ : Type.t String.Map.t * Effect.Set.t) =
-    List.fold_result prog ~init:(lib_ctx, Effect.Set.empty) ~f:check_stmt
+    List.fold_result prog ~init:(Library.extern, Effect.Set.empty) ~f:check_stmt
   in
   ()

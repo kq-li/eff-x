@@ -22,6 +22,8 @@
 %token IF
 %token ELSE
 %token WHILE
+%token FOR
+%token CFOR
 %token RETURN
 %token LPAREN
 %token RPAREN
@@ -55,6 +57,10 @@ stmt:
     { Stmt.If (e, s1, s2) }
   | WHILE; LPAREN; e = toplevel_expr; RPAREN; s = stmt
     { Stmt.While (e, s) }
+  | FOR; LPAREN; x = ID; COLON; a = NUM; ARROW; b = NUM; RPAREN; s = stmt
+    { Stmt.For (x, a, b, s) }
+  | CFOR; LPAREN; x = ID; COLON; a = NUM; ARROW; b = NUM; RPAREN; s = stmt
+    { Stmt.CFor (x, a, b, s) }
   | RETURN; e = toplevel_expr; SEMICOLON
     { Stmt.Return e }
   | s = seq
