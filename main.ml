@@ -5,7 +5,7 @@ let () =
   Command.basic
     ~summary:"parse and typecheck input program, outputting as json"
     (let%map_open.Command filename = anon ("filename" %: string)
-     (* and optimize = flag "--optimize" no_arg ~doc:"whether to apply optimizations" *) in
+     and optimize = flag "--optimize" no_arg ~doc:"whether to apply optimizations" in
      fun () ->
        In_channel.with_file filename ~f:(fun c_in ->
            let lexbuf = Lexing.from_channel c_in in
@@ -13,6 +13,7 @@ let () =
              let prog = Parser.prog Lexer.read lexbuf in
              Typechecker.check prog |> ok_exn;
              prog
+             |> (if optimize then Optimizer.optimize else Fn.id)
              |> Prog.to_json
              |> Yojson.Basic.pretty_to_string
              |> print_endline

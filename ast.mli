@@ -12,6 +12,7 @@ module Effect : sig
 
   include Comparable.S_plain with type t := t
 
+  val noncommutative : Set.t
   val to_json : t -> Yojson.Basic.t
 end
 
@@ -44,6 +45,7 @@ and Expr : sig
     | Apply of t * t
   [@@deriving compare, equal, sexp_of]
 
+  val used_vars : t -> String.Set.t
   val to_json : t -> Yojson.Basic.t
 end
 
@@ -51,14 +53,17 @@ and Stmt : sig
   type t =
     | Skip
     | Assign of string * Type.t * Effect.Set.t * Expr.t
-    | If of Expr.t * t * t
-    | While of Expr.t * t
+    | If of Expr.t * Effect.Set.t * t * t
+    | While of Expr.t * Effect.Set.t * t
     | For of string * int * int * t
-    | CFor of string * int * int * t
+    (* variable, start, end, (accumulator, reducer) list, body *)
+    | CFor of string * int * int * (string * string) list * t
     | Seq of t list
-    | Return of Expr.t
+    | Return of Expr.t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
 
+  val all_effs : t -> Effect.Set.t
+  val used_vars : t -> String.Set.t
   val to_json : t -> Yojson.Basic.t
 end
 

@@ -39,8 +39,8 @@ rule read =
     { WHILE }
   | "for"
     { FOR }
-  | "cfor"
-    { CFOR }
+  (* | "cfor"
+    { CFOR } *)
   | "return"
     { RETURN }
   | '\\'

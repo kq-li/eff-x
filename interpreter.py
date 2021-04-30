@@ -6,7 +6,7 @@ import multiprocess
 import subprocess
 import sys
 
-N = 4
+N = 8
 return_key = '*retval'
 
 def curry(f):
@@ -36,7 +36,19 @@ default_state = {
   'print': print,
 }
 
-manager = multiprocess.Manager()
+def chunked(indices, n):
+  size = len(indices) // n
+  extra = len(indices) % n
+  chunks = []
+  cur = 0
+  while len(chunks) < n:
+    end = cur + size
+    if extra > 0:
+      end += 1
+      extra -= 1
+    chunks.append(indices[cur : end])
+    cur = end
+  return chunks
 
 def eval_expr(e, state):
   if e['kind'] == 'unit':
@@ -73,16 +85,18 @@ def eval_stmt(s, state):
       state[s['name']] = i
       eval_stmt(s['body'], state)
   elif s['kind'] == 'cfor':
-    shared = manager.dict(state)
-    lock = manager.Lock()
-    def func(i):
-      with lock:
-        shared[s['name']] = i
-        eval_stmt(s['body'], shared)
+    def func(indices):
+      for i in indices:
+        state[s['name']] = i
+        eval_stmt(s['body'], state)
+      return state
     with multiprocess.Pool(N) as p:
-      for i in p.map(func, range(s['start'], s['end'] + 1)):
-        pass
-    state.update(shared)
+      indices = range(s['start'], s['end'] + 1)
+      for p_state in p.map(func, chunked(indices, N)):
+        for acc_f in s['acc_fs']:
+          acc = acc_f[0]
+          f = acc_f[1]
+          state[acc] = state[f](state[acc])(p_state[acc])
   elif s['kind'] == 'seq':
     for s1 in s['body']:
       eval_stmt(s1, state)

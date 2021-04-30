@@ -23,7 +23,7 @@
 %token ELSE
 %token WHILE
 %token FOR
-%token CFOR
+/* %token CFOR */
 %token RETURN
 %token LPAREN
 %token RPAREN
@@ -51,24 +51,24 @@ seq:
 stmt:
   | x = ID; COLON; t = typ; effs = list(eff); ASSIGN; e = toplevel_expr; SEMICOLON
     { Stmt.Assign (x, t, Effect.Set.of_list effs, e) }
-  | IF; LPAREN; e = toplevel_expr; RPAREN; s1 = stmt %prec THEN
-    { Stmt.If (e, s1, Stmt.Skip) }
-  | IF; LPAREN; e = toplevel_expr; RPAREN; s1 = stmt; ELSE; s2 = stmt
-    { Stmt.If (e, s1, s2) }
-  | WHILE; LPAREN; e = toplevel_expr; RPAREN; s = stmt
-    { Stmt.While (e, s) }
+  | IF; LPAREN; e = toplevel_expr; effs = list(eff); RPAREN; s1 = stmt %prec THEN
+    { Stmt.If (e, Effect.Set.of_list effs, s1, Stmt.Skip) }
+  | IF; LPAREN; e = toplevel_expr; effs = list(eff); RPAREN; s1 = stmt; ELSE; s2 = stmt
+    { Stmt.If (e, Effect.Set.of_list effs, s1, s2) }
+  | WHILE; LPAREN; e = toplevel_expr; effs = list(eff); RPAREN; s = stmt
+    { Stmt.While (e, Effect.Set.of_list effs, s) }
   | FOR; LPAREN; x = ID; COLON; a = NUM; ARROW; b = NUM; RPAREN; s = stmt
     { Stmt.For (x, a, b, s) }
-  | CFOR; LPAREN; x = ID; COLON; a = NUM; ARROW; b = NUM; RPAREN; s = stmt
-    { Stmt.CFor (x, a, b, s) }
-  | RETURN; e = toplevel_expr; SEMICOLON
-    { Stmt.Return e }
+  /* | CFOR; LPAREN; x = ID; COLON; a = NUM; ARROW; b = NUM; RPAREN; s = stmt */
+  /*   { Stmt.CFor (x, a, b, s) } */
+  | RETURN; e = toplevel_expr; effs = list(eff); SEMICOLON
+    { Stmt.Return (e, Effect.Set.of_list effs) }
   | s = seq
     { s }
 
 lambda:
-  | LAMBDA; x = ID; COLON; t = typ; DOT; e = toplevel_expr
-    { Value.Lambda (x, t, Core.String.Map.empty, Stmt.Return e) }
+  | LAMBDA; x = ID; COLON; t = typ; DOT; e = expr; effs = list(eff)
+    { Value.Lambda (x, t, Core.String.Map.empty, Stmt.Return (e, Effect.Set.of_list effs)) }
   | LAMBDA; x = ID; COLON; t = typ; DOT; s = seq
     { Value.Lambda (x, t, Core.String.Map.empty, s) }
 
@@ -113,7 +113,7 @@ typ:
     { Type.Fun (t1, t2, Effect.Set.of_list effs) }
   | LPAREN; t = typ; RPAREN
     { t }
-    
+
 eff:
   | BANG; e = effect
     { e }
