@@ -9,11 +9,13 @@
 %token UNIT
 %token INT
 %token BOOL
+%token COMMA
 %token DOT
 %token SEMICOLON
 %token COLON
 %token ARROW
 %token BANG
+%token ARR
 %token READ
 %token WRITE
 %token INPUT
@@ -23,19 +25,22 @@
 %token ELSE
 %token WHILE
 %token FOR
-/* %token CFOR */
 %token RETURN
 %token LPAREN
 %token RPAREN
 %token LBRACE
 %token RBRACE
+%token LANGLE
+%token RANGLE
+%token LBRACKET
+%token RBRACKET
 %token ASSIGN
 %token EOF
 
 %right THEN ELSE
-%right ARROW
 %nonassoc TRUE FALSE NUM ID LPAREN
 %left APPLY
+%nonassoc LBRACKET
 
 %start <Prog.t> prog
 %%
@@ -48,20 +53,24 @@ seq:
   | LBRACE; ss = list(stmt); RBRACE
     { Stmt.Seq ss }
 
+assignable:
+  | x = ID
+    { Assignable.Var x }
+  | a = assignable; LBRACKET; e = expr; RBRACKET
+    { Assignable.Sub (a, e) }
+
 stmt:
-  | x = ID; COLON; t = typ; effs = list(eff); ASSIGN; e = toplevel_expr; SEMICOLON
-    { Stmt.Assign (x, t, Effect.Set.of_list effs, e) }
-  | IF; LPAREN; e = toplevel_expr; effs = list(eff); RPAREN; s1 = stmt %prec THEN
+  | a = assignable; COLON; t = typ; effs = list(eff); ASSIGN; e = assign_expr; SEMICOLON
+    { Stmt.Assign (a, t, Effect.Set.of_list effs, e) }
+  | IF; LPAREN; e = expr; effs = list(eff); RPAREN; s1 = stmt %prec THEN
     { Stmt.If (e, Effect.Set.of_list effs, s1, Stmt.Skip) }
-  | IF; LPAREN; e = toplevel_expr; effs = list(eff); RPAREN; s1 = stmt; ELSE; s2 = stmt
+  | IF; LPAREN; e = expr; effs = list(eff); RPAREN; s1 = stmt; ELSE; s2 = stmt
     { Stmt.If (e, Effect.Set.of_list effs, s1, s2) }
-  | WHILE; LPAREN; e = toplevel_expr; effs = list(eff); RPAREN; s = stmt
+  | WHILE; LPAREN; e = expr; effs = list(eff); RPAREN; s = stmt
     { Stmt.While (e, Effect.Set.of_list effs, s) }
   | FOR; LPAREN; x = ID; COLON; a = NUM; ARROW; b = NUM; RPAREN; s = stmt
     { Stmt.For (x, a, b, s) }
-  /* | CFOR; LPAREN; x = ID; COLON; a = NUM; ARROW; b = NUM; RPAREN; s = stmt */
-  /*   { Stmt.CFor (x, a, b, s) } */
-  | RETURN; e = toplevel_expr; effs = list(eff); SEMICOLON
+  | RETURN; e = expr; effs = list(eff); SEMICOLON
     { Stmt.Return (e, Effect.Set.of_list effs) }
   | s = seq
     { s }
@@ -81,6 +90,10 @@ value:
     { Value.Bool true }
   | FALSE
     { Value.Bool false }
+  | e1 = expr; LBRACKET; e2 = expr; RBRACKET
+    { Value.Sub (e1, e2) }
+  /* | LBRACKET; es = separated_list(COMMA, expr); RBRACKET */
+  /*   { Value.Array es } */
   | x = ID
     { Value.Var x }
   | LPAREN; v = lambda; RPAREN
@@ -94,7 +107,7 @@ expr:
   | e1 = expr; e2 = expr %prec APPLY
     { Expr.Apply (e1, e2) }
 
-toplevel_expr:
+assign_expr:
   | e = expr
     { e }
   | v = lambda
@@ -107,9 +120,9 @@ typ:
     { Type.Int }
   | BOOL
     { Type.Bool }
-  | t1 = typ; ARROW; t2 = typ
-    { Type.Fun (t1, t2, Effect.Set.empty) }
-  | LPAREN; t1 = typ; ARROW; t2 = typ; effs = nonempty_list(eff); RPAREN
+  | ARR; LANGLE; t = typ; RANGLE
+    { Type.Array (Some t) }
+  | LPAREN; t1 = typ; ARROW; t2 = typ; effs = list(eff); RPAREN
     { Type.Fun (t1, t2, Effect.Set.of_list effs) }
   | LPAREN; t = typ; RPAREN
     { t }

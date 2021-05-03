@@ -34,6 +34,7 @@ default_state = {
   'neq': curry(lambda x, y: x != y),
   'scan': lambda x: int(input()),
   'print': print,
+  'alloc': lambda n: [None for i in range(n)],
 }
 
 def chunked(indices, n):
@@ -55,6 +56,10 @@ def eval_expr(e, state):
     return None
   elif e['kind'] == 'int' or e['kind'] == 'bool':
     return e['value']
+  elif e['kind'] == 'sub':
+    e1 = eval_expr(e['e1'], state)
+    e2 = eval_expr(e['e2'], state)
+    return e1[e2]
   elif e['kind'] == 'var':
     return state[e['name']]
   elif e['kind'] == 'apply':
@@ -73,8 +78,21 @@ def eval_expr(e, state):
 def eval_stmt(s, state):
   if s['kind'] == 'assign':
     e = eval_expr(s['expr'], state)
-    if s['var'] != '_':
-      state[s['var']] = e
+    a = s['lhs']
+    indices = []
+    while a['kind'] == 'sub':
+      indices.append(a['index'])
+      a = a['base']
+    if len(indices) == 0:
+      state[a['name']] = e
+    else:
+      a = state[a['name']]
+      for i in range(len(indices) - 1, -1, -1):
+        index = eval_expr(indices[i], state)
+        if i > 0:
+          a = a[index]
+        else:
+          a[index] = e
   elif s['kind'] == 'if':
     eval_stmt(s['true'] if eval_expr(s['guard'], state) else s['false'], state)
   elif s['kind'] == 'while':
@@ -92,7 +110,7 @@ def eval_stmt(s, state):
       return state
     with multiprocess.Pool(N) as p:
       indices = range(s['start'], s['end'] + 1)
-      for p_state in p.map(func, chunked(indices, N)):
+      for p_state in p.imap_unordered(func, chunked(indices, N)):
         for acc_f in s['acc_fs']:
           acc = acc_f[0]
           f = acc_f[1]

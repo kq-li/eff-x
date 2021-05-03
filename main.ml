@@ -12,8 +12,9 @@ let () =
            try
              let prog = Parser.prog Lexer.read lexbuf in
              Typechecker.check prog |> ok_exn;
+             let _ = optimize in
              prog
-             |> (if optimize then Optimizer.optimize else Fn.id)
+             (* |> (if optimize then Optimizer.optimize else Fn.id) *)
              |> Prog.to_json
              |> Yojson.Basic.pretty_to_string
              |> print_endline

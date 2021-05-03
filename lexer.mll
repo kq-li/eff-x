@@ -27,6 +27,8 @@ rule read =
     { INPUT }
   | "output"
     { OUTPUT }
+  | "arr"
+    { ARR }
   | "read"
     { READ }
   | "write"
@@ -39,8 +41,6 @@ rule read =
     { WHILE }
   | "for"
     { FOR }
-  (* | "cfor"
-    { CFOR } *)
   | "return"
     { RETURN }
   | '\\'
@@ -53,6 +53,8 @@ rule read =
     { FALSE }
   | ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
     { ID (Lexing.lexeme lexbuf) }
+  | ','
+    { COMMA }
   | '.'
     { DOT }
   | ':'
@@ -71,6 +73,14 @@ rule read =
     { LBRACE }
   | '}'
     { RBRACE }
+  | '<'
+    { LANGLE }
+  | '>'
+    { RANGLE }
+  | '['
+    { LBRACKET }
+  | ']'
+    { RBRACKET }
   | '='
     { ASSIGN }
   | _

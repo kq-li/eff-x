@@ -35,6 +35,7 @@ module Type = struct
     | Unit
     | Int
     | Bool
+    | Array of t option
     | Fun of t * t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
 
@@ -42,6 +43,8 @@ module Type = struct
     | Unit -> `Assoc [ ("kind", `String "unit") ]
     | Int -> `Assoc [ ("kind", `String "int") ]
     | Bool -> `Assoc [ ("kind", `String "bool") ]
+    | Array t ->
+      `Assoc [ ("kind", `String "array"); ("t", Option.value_map t ~f:to_json ~default:`Null) ]
     | Fun (t1, t2, effs) ->
       `Assoc
         [
@@ -57,24 +60,38 @@ module rec Value : sig
     | Unit
     | Int of int
     | Bool of bool
+    | Sub of Expr.t * Expr.t
+    | Array of Expr.t list
     | Var of string
     | Lambda of string * Type.t * Value.t String.Map.t * Stmt.t
   [@@deriving compare, equal, sexp_of]
 
+  val used_vars : t -> String.Set.t
   val to_json : t -> Yojson.Basic.t
 end = struct
   type t =
     | Unit
     | Int of int
     | Bool of bool
+    | Sub of Expr.t * Expr.t
+    | Array of Expr.t list
     | Var of string
     | Lambda of string * Type.t * Value.t String.Map.t * Stmt.t
   [@@deriving compare, equal, sexp_of]
+
+  let used_vars = function
+    | Var x -> String.Set.singleton x
+    | Array es -> List.map es ~f:Expr.used_vars |> String.Set.union_list
+    | _ -> String.Set.empty
 
   let to_json = function
     | Unit -> `Assoc [ ("kind", `String "unit") ]
     | Int n -> `Assoc [ ("kind", `String "int"); ("value", `Int n) ]
     | Bool b -> `Assoc [ ("kind", `String "bool"); ("value", `Bool b) ]
+    | Sub (e1, e2) ->
+      `Assoc [ ("kind", `String "sub"); ("e1", Expr.to_json e1); ("e2", Expr.to_json e2) ]
+    | Array es ->
+      `Assoc [ ("kind", `String "array"); ("exprs", `List (List.map es ~f:Expr.to_json)) ]
     | Var x -> `Assoc [ ("kind", `String "var"); ("name", `String x) ]
     | Lambda (x, t, _, s) ->
       `Assoc
@@ -101,9 +118,8 @@ end = struct
   [@@deriving compare, equal, sexp_of]
 
   let rec used_vars = function
-    | Value (Var x) -> String.Set.singleton x
-    | Value _ -> String.Set.empty
-    | Apply (e1, e2) -> String.Set.union (used_vars e1) (used_vars e2)
+    | Value v -> Value.used_vars v
+    | Apply (e1, e2) -> Set.union (used_vars e1) (used_vars e2)
 
   let to_json = function
     | Value v -> Value.to_json v
@@ -111,10 +127,34 @@ end = struct
       `Assoc [ ("kind", `String "apply"); ("e1", Expr.to_json e1); ("e2", Expr.to_json e2) ]
 end
 
+and Assignable : sig
+  type t =
+    | Var of string
+    | Sub of t * Expr.t
+  [@@deriving compare, equal, sexp_of]
+
+  val used_vars : t -> String.Set.t
+  val to_json : t -> Yojson.Basic.t
+end = struct
+  type t =
+    | Var of string
+    | Sub of t * Expr.t
+  [@@deriving compare, equal, sexp_of]
+
+  let rec used_vars = function
+    | Var _ -> String.Set.empty
+    | Sub (t, e) -> Set.union (used_vars t) (Expr.used_vars e)
+
+  let rec to_json = function
+    | Var x -> `Assoc [ ("kind", `String "var"); ("name", `String x) ]
+    | Sub (t, e) ->
+      `Assoc [ ("kind", `String "sub"); ("base", to_json t); ("index", Expr.to_json e) ]
+end
+
 and Stmt : sig
   type t =
     | Skip
-    | Assign of string * Type.t * Effect.Set.t * Expr.t
+    | Assign of Assignable.t * Type.t * Effect.Set.t * Expr.t
     | If of Expr.t * Effect.Set.t * t * t
     | While of Expr.t * Effect.Set.t * t
     | For of string * int * int * t
@@ -129,7 +169,7 @@ and Stmt : sig
 end = struct
   type t =
     | Skip
-    | Assign of string * Type.t * Effect.Set.t * Expr.t
+    | Assign of Assignable.t * Type.t * Effect.Set.t * Expr.t
     | If of Expr.t * Effect.Set.t * t * t
     | While of Expr.t * Effect.Set.t * t
     | For of string * int * int * t
@@ -151,7 +191,7 @@ end = struct
 
   let rec used_vars = function
     | Skip -> String.Set.empty
-    | Assign (_, _, _, e) -> Expr.used_vars e
+    | Assign (a, _, _, e) -> Set.union (Assignable.used_vars a) (Expr.used_vars e)
     | If (e, _, s1, s2) -> String.Set.union_list [ Expr.used_vars e; used_vars s1; used_vars s2 ]
     | While (e, _, s) -> Set.union (Expr.used_vars e) (used_vars s)
     | For (_, _, _, s)
@@ -162,12 +202,12 @@ end = struct
 
   let rec to_json = function
     | Skip -> `Assoc [ ("kind", `String "skip") ]
-    | Assign (x, t, effs, e) ->
+    | Assign (a, t, effs, e) ->
       `Assoc
         [
           ("kind", `String "assign");
-          ("var", `String x);
-          ("var_type", Type.to_json t);
+          ("lhs", Assignable.to_json a);
+          ("type", Type.to_json t);
           ("effs", Effect.Set.to_json effs);
           ("expr", Expr.to_json e);
         ]

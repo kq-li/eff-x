@@ -2,15 +2,10 @@ open! Core
 open! Ast
 
 let no_eff = Effect.Set.empty
-
 let int_int name = (name, Type.Fun (Int, Int, no_eff))
-
 let bool_bool name = (name, Type.Fun (Bool, Bool, no_eff))
-
 let int_int_int name = (name, Type.Fun (Int, Type.Fun (Int, Int, no_eff), no_eff))
-
 let int_int_bool name = (name, Type.Fun (Int, Type.Fun (Int, Bool, no_eff), no_eff))
-
 let bool_bool_bool name = (name, Type.Fun (Bool, Type.Fun (Bool, Bool, no_eff), no_eff))
 
 [@@@ocamlformat "disable"]
@@ -38,8 +33,7 @@ let extern =
     [
       ("scan", Type.Fun (Unit, Int, Effect.Set.singleton Effect.Input));
       ("print", Type.Fun (Int, Unit, Effect.Set.singleton Effect.Output));
-      ("load", Type.Fun (Int, Int, Effect.Set.singleton Effect.Read));
-      ("store", Type.Fun (Int, Type.Fun (Int, Unit, Effect.Set.singleton Effect.Write), Effect.Set.empty));
+      ("alloc", Type.Fun (Int, Array None, no_eff));
     ];
   ] |> String.Map.of_alist_exn
 

@@ -21,6 +21,7 @@ module Type : sig
     | Unit
     | Int
     | Bool
+    | Array of t option
     | Fun of t * t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
 
@@ -32,10 +33,13 @@ module rec Value : sig
     | Unit
     | Int of int
     | Bool of bool
+    | Sub of Expr.t * Expr.t
+    | Array of Expr.t list
     | Var of string
     | Lambda of string * Type.t * Value.t String.Map.t * Stmt.t
   [@@deriving compare, equal, sexp_of]
 
+  val used_vars : t -> String.Set.t
   val to_json : t -> Yojson.Basic.t
 end
 
@@ -49,10 +53,20 @@ and Expr : sig
   val to_json : t -> Yojson.Basic.t
 end
 
+and Assignable : sig
+  type t =
+    | Var of string
+    | Sub of t * Expr.t
+  [@@deriving compare, equal, sexp_of]
+
+  val used_vars : t -> String.Set.t
+  val to_json : t -> Yojson.Basic.t
+end
+
 and Stmt : sig
   type t =
     | Skip
-    | Assign of string * Type.t * Effect.Set.t * Expr.t
+    | Assign of Assignable.t * Type.t * Effect.Set.t * Expr.t
     | If of Expr.t * Effect.Set.t * t * t
     | While of Expr.t * Effect.Set.t * t
     | For of string * int * int * t
