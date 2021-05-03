@@ -8,14 +8,12 @@ let next_line lexbuf =
     { pos with pos_bol = lexbuf.lex_curr_pos; pos_lnum = pos.pos_lnum + 1 }
 }
 
-let newline = '\r' | '\n' | "\r\n"
-
 rule read =
   parse
   | [' ' '\t']+
     { read lexbuf }
-  | newline
-  | "//" _* newline
+  | '\n'
+  | "//" [^ '\n']* '\n'
     { next_line lexbuf; read lexbuf }
   | "unit"
     { UNIT }

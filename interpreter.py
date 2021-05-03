@@ -59,7 +59,10 @@ def eval_expr(e, state):
   elif e['kind'] == 'sub':
     e1 = eval_expr(e['e1'], state)
     e2 = eval_expr(e['e2'], state)
-    return e1[e2]
+    try:
+      return e1[e2]
+    except:
+      raise Exception('array index out of bounds: %d' % e2) from None
   elif e['kind'] == 'var':
     return state[e['name']]
   elif e['kind'] == 'apply':
@@ -83,16 +86,21 @@ def eval_stmt(s, state):
     while a['kind'] == 'sub':
       indices.append(a['index'])
       a = a['base']
-    if len(indices) == 0:
+    if a['name'] == '_':
+      pass
+    elif len(indices) == 0:
       state[a['name']] = e
     else:
-      a = state[a['name']]
+      array = state[a['name']]
       for i in range(len(indices) - 1, -1, -1):
         index = eval_expr(indices[i], state)
-        if i > 0:
-          a = a[index]
-        else:
-          a[index] = e
+        try:
+          if i > 0:
+            array = array[index]
+          else:
+            array[index] = e
+        except:
+          raise Exception('array index out of bounds: %d' % index) from None
   elif s['kind'] == 'if':
     eval_stmt(s['true'] if eval_expr(s['guard'], state) else s['false'], state)
   elif s['kind'] == 'while':

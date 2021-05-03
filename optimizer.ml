@@ -53,8 +53,8 @@ let rec check ctx stmt =
     | _ -> update_ctx ctx e |> Map.set ~key:x ~data:Any )
   | If (e, _, s1, s2) -> check (check (update_ctx ctx e) s1) s2
   | While (e, _, s) -> check (update_ctx ctx e) s
-  | For (_, _, _, s)
-  | CFor (_, _, _, _, s) ->
+  | For (_, _, _, _, _, s)
+  | CFor (_, _, _, _, _, _, s) ->
     check ctx s
   | Seq ss -> List.fold ss ~init:ctx ~f:check
   | Return (e, _) -> update_ctx ctx e
