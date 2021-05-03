@@ -63,6 +63,8 @@ rule read =
     { SEMICOLON }
   | "->"
     { ARROW }
+  | "|"
+    { PIPE }
   | '!'
     { BANG }
   | '('

@@ -14,6 +14,7 @@
 %token SEMICOLON
 %token COLON
 %token ARROW
+%token PIPE
 %token BANG
 %token ARR
 %token READ
@@ -68,8 +69,10 @@ stmt:
     { Stmt.If (e, Effect.Set.of_list effs, s1, s2) }
   | WHILE; LPAREN; e = expr; effs = list(eff); RPAREN; s = stmt
     { Stmt.While (e, Effect.Set.of_list effs, s) }
-  | FOR; LPAREN; x = ID; COLON; a = NUM; ARROW; b = NUM; RPAREN; s = stmt
-    { Stmt.For (x, a, b, s) }
+  | FOR; LPAREN; x = ID; COLON; e1 = expr; ARROW; e2 = expr; effs = list(eff); RPAREN; s = stmt
+    { Stmt.For (x, e1, e2, Value (Int 1), Effect.Set.of_list effs, s) }
+  | FOR; LPAREN; x = ID; COLON; e1 = expr; ARROW; e2 = expr; PIPE; e3 = expr; effs = list(eff); RPAREN; s = stmt
+    { Stmt.For (x, e1, e2, e3, Effect.Set.of_list effs, s) }
   | RETURN; e = expr; effs = list(eff); SEMICOLON
     { Stmt.Return (e, Effect.Set.of_list effs) }
   | s = seq

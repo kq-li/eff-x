@@ -157,8 +157,8 @@ and Stmt : sig
     | Assign of Assignable.t * Type.t * Effect.Set.t * Expr.t
     | If of Expr.t * Effect.Set.t * t * t
     | While of Expr.t * Effect.Set.t * t
-    | For of string * int * int * t
-    | CFor of string * int * int * (string * string) list * t
+    | For of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * t
+    | CFor of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * (string * string) list * t
     | Seq of t list
     | Return of Expr.t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
@@ -172,8 +172,8 @@ end = struct
     | Assign of Assignable.t * Type.t * Effect.Set.t * Expr.t
     | If of Expr.t * Effect.Set.t * t * t
     | While of Expr.t * Effect.Set.t * t
-    | For of string * int * int * t
-    | CFor of string * int * int * (string * string) list * t
+    | For of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * t
+    | CFor of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * (string * string) list * t
     | Seq of t list
     | Return of Expr.t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
@@ -183,9 +183,9 @@ end = struct
     | Assign (_, _, effs, _) -> effs
     | If (_, effs, s1, s2) -> Effect.Set.union_list [ effs; all_effs s1; all_effs s2 ]
     | While (_, effs, s) -> Set.union effs (all_effs s)
-    | For (_, _, _, s)
-    | CFor (_, _, _, _, s) ->
-      all_effs s
+    | For (_, _, _, _, effs, s)
+    | CFor (_, _, _, _, effs, _, s) ->
+      Set.union effs (all_effs s)
     | Seq ss -> Effect.Set.union_list (List.map ss ~f:all_effs)
     | Return (_, effs) -> effs
 
@@ -194,9 +194,9 @@ end = struct
     | Assign (a, _, _, e) -> Set.union (Assignable.used_vars a) (Expr.used_vars e)
     | If (e, _, s1, s2) -> String.Set.union_list [ Expr.used_vars e; used_vars s1; used_vars s2 ]
     | While (e, _, s) -> Set.union (Expr.used_vars e) (used_vars s)
-    | For (_, _, _, s)
-    | CFor (_, _, _, _, s) ->
-      used_vars s
+    | For (_, e1, e2, e3, _, s)
+    | CFor (_, e1, e2, e3, _, _, s) ->
+      String.Set.union_list [ Expr.used_vars e1; Expr.used_vars e2; Expr.used_vars e3; used_vars s ]
     | Seq ss -> String.Set.union_list (List.map ss ~f:used_vars)
     | Return (e, _) -> Expr.used_vars e
 
@@ -228,22 +228,26 @@ end = struct
           ("effs", Effect.Set.to_json effs);
           ("body", to_json s);
         ]
-    | For (x, a, b, s) ->
+    | For (x, e1, e2, e3, effs, s) ->
       `Assoc
         [
           ("kind", `String "for");
           ("name", `String x);
-          ("start", `Int a);
-          ("end", `Int b);
+          ("start", Expr.to_json e1);
+          ("end", Expr.to_json e2);
+          ("step", Expr.to_json e3);
+          ("effs", Effect.Set.to_json effs);
           ("body", to_json s);
         ]
-    | CFor (x, a, b, acc_fs, s) ->
+    | CFor (x, e1, e2, e3, effs, acc_fs, s) ->
       `Assoc
         [
           ("kind", `String "cfor");
           ("name", `String x);
-          ("start", `Int a);
-          ("end", `Int b);
+          ("start", Expr.to_json e1);
+          ("end", Expr.to_json e2);
+          ("step", Expr.to_json e3);
+          ("effs", Effect.Set.to_json effs);
           ("acc_fs", `List (List.map acc_fs ~f:(fun (acc, f) -> `List [ `String acc; `String f ])));
           ("body", to_json s);
         ]

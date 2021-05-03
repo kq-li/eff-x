@@ -99,7 +99,10 @@ def eval_stmt(s, state):
     while eval_expr(s['guard'], state):
       eval_stmt(s['body'], state)
   elif s['kind'] == 'for':
-    for i in range(s['start'], s['end'] + 1):
+    start = eval_expr(s['start'], state)
+    end = eval_expr(s['end'], state)
+    step = eval_expr(s['step'], state)
+    for i in range(start, end, step):
       state[s['name']] = i
       eval_stmt(s['body'], state)
   elif s['kind'] == 'cfor':
@@ -108,8 +111,11 @@ def eval_stmt(s, state):
         state[s['name']] = i
         eval_stmt(s['body'], state)
       return state
+    start = eval_expr(s['start'], state)
+    end = eval_expr(s['end'], state)
+    step = eval_expr(s['step'], state)
+    indices = range(start, end, step)
     with multiprocess.Pool(N) as p:
-      indices = range(s['start'], s['end'] + 1)
       for p_state in p.imap_unordered(func, chunked(indices, N)):
         for acc_f in s['acc_fs']:
           acc = acc_f[0]

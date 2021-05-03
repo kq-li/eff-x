@@ -69,9 +69,9 @@ and Stmt : sig
     | Assign of Assignable.t * Type.t * Effect.Set.t * Expr.t
     | If of Expr.t * Effect.Set.t * t * t
     | While of Expr.t * Effect.Set.t * t
-    | For of string * int * int * t
-    (* variable, start, end, (accumulator, reducer) list, body *)
-    | CFor of string * int * int * (string * string) list * t
+    | For of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * t
+    (* variable, start, end, step, effs, (accumulator, reducer) list, body *)
+    | CFor of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * (string * string) list * t
     | Seq of t list
     | Return of Expr.t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]

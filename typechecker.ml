@@ -147,15 +147,23 @@ and check_stmt (ctx, all_effs) stmt =
     let%bind () = assert_effs effs effs_e stmt in
     let%map (_, all_effs) = check_stmt (ctx, all_effs) s in
     (ctx, Set.union effs all_effs)
-  | For (x, _, _, s) ->
+  | For (x, e1, e2, e3, effs, s) ->
+    let%bind effs1 = assert_int ctx e1 in
+    let%bind effs2 = assert_int ctx e2 in
+    let%bind effs3 = assert_int ctx e3 in
+    let%bind () = assert_effs effs (Effect.Set.union_list [ effs1; effs2; effs3 ]) stmt in
     let%bind new_ctx =
       match Map.find ctx x with
       | Some _ -> Or_error.error_s [%message "loop variable already bound" x]
       | None -> Ok (set_index ctx x)
     in
     let%map (_, all_effs) = check_stmt (new_ctx, all_effs) s in
-    (ctx, all_effs)
-  | CFor (x, _, _, acc_fs, s) ->
+    (ctx, Set.union effs all_effs)
+  | CFor (x, e1, e2, e3, effs, acc_fs, s) ->
+    let%bind effs1 = assert_int ctx e1 in
+    let%bind effs2 = assert_int ctx e2 in
+    let%bind effs3 = assert_int ctx e3 in
+    let%bind () = assert_effs effs (Effect.Set.union_list [ effs1; effs2; effs3 ]) stmt in
     let%bind new_ctx =
       match Map.find ctx x with
       | Some _ -> Or_error.error_s [%message "loop variable already bound" x]
@@ -170,7 +178,7 @@ and check_stmt (ctx, all_effs) stmt =
       |> Or_error.combine_errors_unit
     in
     let%map (_, all_effs) = check_stmt (new_ctx, all_effs) s in
-    (ctx, all_effs)
+    (ctx, Set.union effs all_effs)
   | Seq ss -> List.fold_result ss ~init:(ctx, all_effs) ~f:check_stmt
   | Return (e, effs) ->
     let%bind (t, effs_e) = check_expr ctx e in
