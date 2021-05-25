@@ -34,7 +34,7 @@ module rec Value : sig
     | Int of int
     | Bool of bool
     | Sub of Expr.t * Expr.t
-    | Array of Expr.t list
+    (* | Array of Expr.t list *)
     | Var of string
     | Lambda of string * Type.t * Value.t String.Map.t * Stmt.t
   [@@deriving compare, equal, sexp_of]
@@ -70,8 +70,8 @@ and Stmt : sig
     | If of Expr.t * Effect.Set.t * t * t
     | While of Expr.t * Effect.Set.t * t
     | For of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * t
-    (* variable, start, end, step, effs, (accumulator, reducer) list, body *)
-    | CFor of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * (string * string) list * t
+    (* variable, start, end, step, effs, (accumulator, reducer, merge_arr) list, body *)
+    | CFor of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * (string * string * bool) list * t
     | Seq of t list
     | Return of Expr.t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]

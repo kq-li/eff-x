@@ -1,0 +1,64 @@
+{
+  "kind": "seq",
+  "body": [
+    {
+      "kind": "assign",
+      "lhs": { "kind": "var", "name": "n" },
+      "type": { "kind": "int" },
+      "effs": [],
+      "expr": { "kind": "int", "value": 5000000 }
+    },
+    {
+      "kind": "assign",
+      "lhs": { "kind": "var", "name": "c" },
+      "type": { "kind": "int" },
+      "effs": [],
+      "expr": { "kind": "int", "value": 0 }
+    },
+    {
+      "kind": "for",
+      "name": "i",
+      "start": { "kind": "int", "value": 1 },
+      "end": { "kind": "var", "name": "n" },
+      "step": { "kind": "int", "value": 1 },
+      "effs": [],
+      "body": {
+        "kind": "assign",
+        "lhs": { "kind": "var", "name": "c" },
+        "type": { "kind": "int" },
+        "effs": [],
+        "expr": {
+          "kind": "apply",
+          "e1": {
+            "kind": "apply",
+            "e1": { "kind": "var", "name": "add" },
+            "e2": { "kind": "var", "name": "c" }
+          },
+          "e2": { "kind": "var", "name": "i" }
+        }
+      }
+    },
+    {
+      "kind": "assign",
+      "lhs": { "kind": "var", "name": "_" },
+      "type": { "kind": "unit" },
+      "effs": [ { "kind": "output" } ],
+      "expr": {
+        "kind": "apply",
+        "e1": { "kind": "var", "name": "print" },
+        "e2": { "kind": "var", "name": "c" }
+      }
+    },
+    {
+      "kind": "assign",
+      "lhs": { "kind": "var", "name": "_" },
+      "type": { "kind": "unit" },
+      "effs": [ { "kind": "output" } ],
+      "expr": {
+        "kind": "apply",
+        "e1": { "kind": "var", "name": "newline" },
+        "e2": { "kind": "unit" }
+      }
+    }
+  ]
+}

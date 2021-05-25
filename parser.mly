@@ -9,7 +9,7 @@
 %token UNIT
 %token INT
 %token BOOL
-%token COMMA
+/* %token COMMA */
 %token DOT
 %token SEMICOLON
 %token COLON

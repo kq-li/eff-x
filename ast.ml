@@ -15,7 +15,7 @@ module Effect = struct
   include T
   include Comparable.Make_plain (T)
 
-  let noncommutative = Set.of_list [ Input; Output; Write ]
+  let noncommutative = Set.of_list [ Input; Output ]
 
   let to_json = function
     | Input -> `Assoc [ ("kind", `String "input") ]
@@ -61,7 +61,7 @@ module rec Value : sig
     | Int of int
     | Bool of bool
     | Sub of Expr.t * Expr.t
-    | Array of Expr.t list
+    (* | Array of Expr.t list *)
     | Var of string
     | Lambda of string * Type.t * Value.t String.Map.t * Stmt.t
   [@@deriving compare, equal, sexp_of]
@@ -74,14 +74,14 @@ end = struct
     | Int of int
     | Bool of bool
     | Sub of Expr.t * Expr.t
-    | Array of Expr.t list
+    (* | Array of Expr.t list *)
     | Var of string
     | Lambda of string * Type.t * Value.t String.Map.t * Stmt.t
   [@@deriving compare, equal, sexp_of]
 
   let used_vars = function
     | Var x -> String.Set.singleton x
-    | Array es -> List.map es ~f:Expr.used_vars |> String.Set.union_list
+    (* | Array es -> List.map es ~f:Expr.used_vars |> String.Set.union_list *)
     | _ -> String.Set.empty
 
   let to_json = function
@@ -90,8 +90,8 @@ end = struct
     | Bool b -> `Assoc [ ("kind", `String "bool"); ("value", `Bool b) ]
     | Sub (e1, e2) ->
       `Assoc [ ("kind", `String "sub"); ("e1", Expr.to_json e1); ("e2", Expr.to_json e2) ]
-    | Array es ->
-      `Assoc [ ("kind", `String "array"); ("exprs", `List (List.map es ~f:Expr.to_json)) ]
+    (* | Array es ->
+     *   `Assoc [ ("kind", `String "array"); ("exprs", `List (List.map es ~f:Expr.to_json)) ] *)
     | Var x -> `Assoc [ ("kind", `String "var"); ("name", `String x) ]
     | Lambda (x, t, _, s) ->
       `Assoc
@@ -158,7 +158,7 @@ and Stmt : sig
     | If of Expr.t * Effect.Set.t * t * t
     | While of Expr.t * Effect.Set.t * t
     | For of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * t
-    | CFor of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * (string * string) list * t
+    | CFor of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * (string * string * bool) list * t
     | Seq of t list
     | Return of Expr.t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
@@ -173,7 +173,7 @@ end = struct
     | If of Expr.t * Effect.Set.t * t * t
     | While of Expr.t * Effect.Set.t * t
     | For of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * t
-    | CFor of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * (string * string) list * t
+    | CFor of string * Expr.t * Expr.t * Expr.t * Effect.Set.t * (string * string * bool) list * t
     | Seq of t list
     | Return of Expr.t * Effect.Set.t
   [@@deriving compare, equal, sexp_of]
@@ -248,7 +248,10 @@ end = struct
           ("end", Expr.to_json e2);
           ("step", Expr.to_json e3);
           ("effs", Effect.Set.to_json effs);
-          ("acc_fs", `List (List.map acc_fs ~f:(fun (acc, f) -> `List [ `String acc; `String f ])));
+          ( "acc_fs",
+            `List
+              (List.map acc_fs ~f:(fun (acc, f, merge_arr) ->
+                   `List [ `String acc; `String f; `Bool merge_arr ])) );
           ("body", to_json s);
         ]
     | Seq ss -> `Assoc [ ("kind", `String "seq"); ("body", `List (List.map ss ~f:to_json)) ]

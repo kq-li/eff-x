@@ -1,0 +1,391 @@
+{
+  "kind": "seq",
+  "body": [
+    {
+      "kind": "assign",
+      "lhs": { "kind": "var", "name": "n" },
+      "type": { "kind": "int" },
+      "effs": [],
+      "expr": { "kind": "int", "value": 200 }
+    },
+    {
+      "kind": "assign",
+      "lhs": { "kind": "var", "name": "print_matrix" },
+      "type": {
+        "kind": "fun",
+        "t1": { "kind": "int" },
+        "t2": {
+          "kind": "fun",
+          "t1": {
+            "kind": "array",
+            "t": { "kind": "array", "t": { "kind": "int" } }
+          },
+          "t2": { "kind": "unit" },
+          "effs": [ { "kind": "output" }, { "kind": "read" } ]
+        },
+        "effs": []
+      },
+      "effs": [],
+      "expr": {
+        "kind": "lambda",
+        "arg": "n",
+        "arg_type": { "kind": "int" },
+        "body": {
+          "kind": "return",
+          "expr": {
+            "kind": "lambda",
+            "arg": "a",
+            "arg_type": {
+              "kind": "array",
+              "t": { "kind": "array", "t": { "kind": "int" } }
+            },
+            "body": {
+              "kind": "seq",
+              "body": [
+                {
+                  "kind": "for",
+                  "name": "i",
+                  "start": { "kind": "int", "value": 0 },
+                  "end": { "kind": "var", "name": "n" },
+                  "step": { "kind": "int", "value": 1 },
+                  "effs": [],
+                  "body": {
+                    "kind": "seq",
+                    "body": [
+                      {
+                        "kind": "for",
+                        "name": "j",
+                        "start": { "kind": "int", "value": 0 },
+                        "end": { "kind": "var", "name": "n" },
+                        "step": { "kind": "int", "value": 1 },
+                        "effs": [],
+                        "body": {
+                          "kind": "seq",
+                          "body": [
+                            {
+                              "kind": "assign",
+                              "lhs": { "kind": "var", "name": "_" },
+                              "type": { "kind": "unit" },
+                              "effs": [
+                                { "kind": "output" },
+                                { "kind": "read" }
+                              ],
+                              "expr": {
+                                "kind": "apply",
+                                "e1": { "kind": "var", "name": "print" },
+                                "e2": {
+                                  "kind": "sub",
+                                  "e1": {
+                                    "kind": "sub",
+                                    "e1": { "kind": "var", "name": "a" },
+                                    "e2": { "kind": "var", "name": "i" }
+                                  },
+                                  "e2": { "kind": "var", "name": "j" }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "kind": "assign",
+                        "lhs": { "kind": "var", "name": "_" },
+                        "type": { "kind": "unit" },
+                        "effs": [ { "kind": "output" } ],
+                        "expr": {
+                          "kind": "apply",
+                          "e1": { "kind": "var", "name": "newline" },
+                          "e2": { "kind": "unit" }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "effs": []
+        }
+      }
+    },
+    {
+      "kind": "assign",
+      "lhs": { "kind": "var", "name": "a" },
+      "type": {
+        "kind": "array",
+        "t": { "kind": "array", "t": { "kind": "int" } }
+      },
+      "effs": [],
+      "expr": {
+        "kind": "apply",
+        "e1": { "kind": "var", "name": "alloc" },
+        "e2": { "kind": "var", "name": "n" }
+      }
+    },
+    {
+      "kind": "assign",
+      "lhs": { "kind": "var", "name": "b" },
+      "type": {
+        "kind": "array",
+        "t": { "kind": "array", "t": { "kind": "int" } }
+      },
+      "effs": [],
+      "expr": {
+        "kind": "apply",
+        "e1": { "kind": "var", "name": "alloc" },
+        "e2": { "kind": "var", "name": "n" }
+      }
+    },
+    {
+      "kind": "cfor",
+      "name": "i",
+      "start": { "kind": "int", "value": 0 },
+      "end": { "kind": "var", "name": "n" },
+      "step": { "kind": "int", "value": 1 },
+      "effs": [],
+      "acc_fs": [ [ "b", "merge", true ], [ "a", "merge", true ] ],
+      "body": {
+        "kind": "seq",
+        "body": [
+          {
+            "kind": "assign",
+            "lhs": {
+              "kind": "sub",
+              "base": { "kind": "var", "name": "a" },
+              "index": { "kind": "var", "name": "i" }
+            },
+            "type": { "kind": "array", "t": { "kind": "int" } },
+            "effs": [ { "kind": "write" } ],
+            "expr": {
+              "kind": "apply",
+              "e1": { "kind": "var", "name": "alloc" },
+              "e2": { "kind": "var", "name": "n" }
+            }
+          },
+          {
+            "kind": "assign",
+            "lhs": {
+              "kind": "sub",
+              "base": { "kind": "var", "name": "b" },
+              "index": { "kind": "var", "name": "i" }
+            },
+            "type": { "kind": "array", "t": { "kind": "int" } },
+            "effs": [ { "kind": "write" } ],
+            "expr": {
+              "kind": "apply",
+              "e1": { "kind": "var", "name": "alloc" },
+              "e2": { "kind": "var", "name": "n" }
+            }
+          },
+          {
+            "kind": "for",
+            "name": "j",
+            "start": { "kind": "int", "value": 0 },
+            "end": { "kind": "var", "name": "n" },
+            "step": { "kind": "int", "value": 1 },
+            "effs": [],
+            "body": {
+              "kind": "seq",
+              "body": [
+                {
+                  "kind": "if",
+                  "guard": {
+                    "kind": "apply",
+                    "e1": {
+                      "kind": "apply",
+                      "e1": { "kind": "var", "name": "eq" },
+                      "e2": { "kind": "var", "name": "i" }
+                    },
+                    "e2": { "kind": "var", "name": "j" }
+                  },
+                  "effs": [],
+                  "true": {
+                    "kind": "assign",
+                    "lhs": {
+                      "kind": "sub",
+                      "base": {
+                        "kind": "sub",
+                        "base": { "kind": "var", "name": "a" },
+                        "index": { "kind": "var", "name": "i" }
+                      },
+                      "index": { "kind": "var", "name": "j" }
+                    },
+                    "type": { "kind": "int" },
+                    "effs": [ { "kind": "write" } ],
+                    "expr": { "kind": "var", "name": "i" }
+                  },
+                  "false": {
+                    "kind": "assign",
+                    "lhs": {
+                      "kind": "sub",
+                      "base": {
+                        "kind": "sub",
+                        "base": { "kind": "var", "name": "a" },
+                        "index": { "kind": "var", "name": "i" }
+                      },
+                      "index": { "kind": "var", "name": "j" }
+                    },
+                    "type": { "kind": "int" },
+                    "effs": [ { "kind": "write" } ],
+                    "expr": { "kind": "int", "value": 0 }
+                  }
+                },
+                {
+                  "kind": "assign",
+                  "lhs": {
+                    "kind": "sub",
+                    "base": {
+                      "kind": "sub",
+                      "base": { "kind": "var", "name": "b" },
+                      "index": { "kind": "var", "name": "i" }
+                    },
+                    "index": { "kind": "var", "name": "j" }
+                  },
+                  "type": { "kind": "int" },
+                  "effs": [ { "kind": "write" } ],
+                  "expr": {
+                    "kind": "apply",
+                    "e1": {
+                      "kind": "apply",
+                      "e1": { "kind": "var", "name": "add" },
+                      "e2": {
+                        "kind": "apply",
+                        "e1": {
+                          "kind": "apply",
+                          "e1": { "kind": "var", "name": "mul" },
+                          "e2": { "kind": "var", "name": "n" }
+                        },
+                        "e2": { "kind": "var", "name": "i" }
+                      }
+                    },
+                    "e2": { "kind": "var", "name": "j" }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "assign",
+      "lhs": { "kind": "var", "name": "c" },
+      "type": {
+        "kind": "array",
+        "t": { "kind": "array", "t": { "kind": "int" } }
+      },
+      "effs": [],
+      "expr": { "kind": "var", "name": "a" }
+    },
+    {
+      "kind": "cfor",
+      "name": "i",
+      "start": { "kind": "int", "value": 0 },
+      "end": { "kind": "var", "name": "n" },
+      "step": { "kind": "int", "value": 1 },
+      "effs": [],
+      "acc_fs": [ [ "c", "merge", true ] ],
+      "body": {
+        "kind": "seq",
+        "body": [
+          {
+            "kind": "for",
+            "name": "j",
+            "start": { "kind": "int", "value": 0 },
+            "end": { "kind": "var", "name": "n" },
+            "step": { "kind": "int", "value": 1 },
+            "effs": [],
+            "body": {
+              "kind": "seq",
+              "body": [
+                {
+                  "kind": "assign",
+                  "lhs": {
+                    "kind": "sub",
+                    "base": {
+                      "kind": "sub",
+                      "base": { "kind": "var", "name": "c" },
+                      "index": { "kind": "var", "name": "i" }
+                    },
+                    "index": { "kind": "var", "name": "j" }
+                  },
+                  "type": { "kind": "int" },
+                  "effs": [ { "kind": "write" } ],
+                  "expr": { "kind": "int", "value": 0 }
+                },
+                {
+                  "kind": "for",
+                  "name": "k",
+                  "start": { "kind": "int", "value": 0 },
+                  "end": { "kind": "var", "name": "n" },
+                  "step": { "kind": "int", "value": 1 },
+                  "effs": [],
+                  "body": {
+                    "kind": "seq",
+                    "body": [
+                      {
+                        "kind": "assign",
+                        "lhs": {
+                          "kind": "sub",
+                          "base": {
+                            "kind": "sub",
+                            "base": { "kind": "var", "name": "c" },
+                            "index": { "kind": "var", "name": "i" }
+                          },
+                          "index": { "kind": "var", "name": "j" }
+                        },
+                        "type": { "kind": "int" },
+                        "effs": [ { "kind": "read" }, { "kind": "write" } ],
+                        "expr": {
+                          "kind": "apply",
+                          "e1": {
+                            "kind": "apply",
+                            "e1": { "kind": "var", "name": "add" },
+                            "e2": {
+                              "kind": "sub",
+                              "e1": {
+                                "kind": "sub",
+                                "e1": { "kind": "var", "name": "c" },
+                                "e2": { "kind": "var", "name": "i" }
+                              },
+                              "e2": { "kind": "var", "name": "j" }
+                            }
+                          },
+                          "e2": {
+                            "kind": "apply",
+                            "e1": {
+                              "kind": "apply",
+                              "e1": { "kind": "var", "name": "mul" },
+                              "e2": {
+                                "kind": "sub",
+                                "e1": {
+                                  "kind": "sub",
+                                  "e1": { "kind": "var", "name": "a" },
+                                  "e2": { "kind": "var", "name": "i" }
+                                },
+                                "e2": { "kind": "var", "name": "k" }
+                              }
+                            },
+                            "e2": {
+                              "kind": "sub",
+                              "e1": {
+                                "kind": "sub",
+                                "e1": { "kind": "var", "name": "b" },
+                                "e2": { "kind": "var", "name": "k" }
+                              },
+                              "e2": { "kind": "var", "name": "j" }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

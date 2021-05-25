@@ -1,0 +1,37 @@
+n : int = 200;
+
+print_matrix : (int -> (arr<arr<int>> -> unit !output !read)) = \n : int . (\a : arr<arr<int>> . {
+  for (i : 0 -> n) {
+    for (j : 0 -> n) {
+      _ : unit !output !read = print a[i][j];
+    }
+    _ : unit !output = newline ();
+  }
+});
+
+a : arr<arr<int>> = alloc n;
+b : arr<arr<int>> = alloc n;
+for (i : 0 -> n) {
+  a[i] : arr<int> !write = alloc n;
+  b[i] : arr<int> !write = alloc n;
+  for (j : 0 -> n) {
+    if (eq i j)
+      a[i][j] : int !write = i;
+    else
+      a[i][j] : int !write = 0;
+    b[i][j] : int !write = add (mul n i) j;
+  }
+}
+// _ : unit !output !read = print_matrix n a;
+// _ : unit !output !read = print_matrix n b;
+
+c : arr<arr<int>> = a;
+for (i : 0 -> n) {
+  for (j : 0 -> n) {
+    c[i][j] : int !write = 0;
+    for (k : 0 -> n) {
+      c[i][j] : int !write !read = add c[i][j] (mul a[i][k] b[k][j]);
+    }
+  }
+}
+// _ : unit !output !read = print_matrix n c;

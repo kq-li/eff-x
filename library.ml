@@ -33,6 +33,7 @@ let extern =
     [
       ("scan", Type.Fun (Unit, Int, Effect.Set.singleton Effect.Input));
       ("print", Type.Fun (Int, Unit, Effect.Set.singleton Effect.Output));
+      ("newline", Type.Fun (Unit, Unit, Effect.Set.singleton Effect.Output));
       ("alloc", Type.Fun (Int, Array None, no_eff));
     ];
   ] |> String.Map.of_alist_exn

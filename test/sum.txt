@@ -1,0 +1,6 @@
+n : int = 5000000;
+c : int = 0;
+for (i : 1 -> n) 
+  c : int = add c i;
+_ : unit !output = print c;
+_ : unit !output = newline ();

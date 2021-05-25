@@ -38,27 +38,27 @@ let rec check_value ctx = function
     ( match t1 with
     | Type.Array (Some t_arr) ->
       let%map effs2 = assert_int ctx e2 in
-      (t_arr, Set.union effs1 effs2)
+      (t_arr, Effect.Set.union_list [ Effect.Set.singleton Read; effs1; effs2 ])
     | _ ->
       Or_error.error_s
         [%message "index into invalid array" (e1 : Expr.t) (t1 : Type.t) (e2 : Expr.t)] )
-  | Array es ->
-    ( match%map
-        List.fold_result es ~init:None ~f:(fun acc e ->
-            match acc with
-            | None ->
-              let%map t_effs = check_expr ctx e in
-              Some t_effs
-            | Some (t1, effs1) ->
-              let%bind (t2, effs2) = check_expr ctx e in
-              if Type.equal t1 t2 then Ok (Some (t1, Set.union effs1 effs2))
-              else
-                Or_error.error_s
-                  [%message
-                    "array contains multiple types" (es : Expr.t list) (t1 : Type.t) (t2 : Type.t)])
-      with
-    | None -> (Type.Array None, no_eff)
-    | Some (t, effs) -> (Type.Array (Some t), effs) )
+  (* | Array es ->
+   *   ( match%map
+   *       List.fold_result es ~init:None ~f:(fun acc e ->
+   *           match acc with
+   *           | None ->
+   *             let%map t_effs = check_expr ctx e in
+   *             Some t_effs
+   *           | Some (t1, effs1) ->
+   *             let%bind (t2, effs2) = check_expr ctx e in
+   *             if Type.equal t1 t2 then Ok (Some (t1, Set.union effs1 effs2))
+   *             else
+   *               Or_error.error_s
+   *                 [%message
+   *                   "array contains multiple types" (es : Expr.t list) (t1 : Type.t) (t2 : Type.t)])
+   *     with
+   *   | None -> (Type.Array None, no_eff)
+   *   | Some (t, effs) -> (Type.Array (Some t), effs) ) *)
   | Var x ->
     let%map t = lookup ctx x in
     (t, no_eff)
@@ -114,7 +114,7 @@ and check_assignable ctx a t =
   | Sub (a, e) ->
     let%bind (ctx, effs_a) = check_assignable ctx a (Array (Some t)) in
     let%map effs_e = assert_int ctx e in
-    (ctx, Set.union effs_a effs_e)
+    (ctx, Effect.Set.union_list [ Effect.Set.singleton Write; effs_a; effs_e ])
 
 and check_stmt (ctx, all_effs) stmt =
   match stmt with
@@ -159,7 +159,7 @@ and check_stmt (ctx, all_effs) stmt =
     in
     let%map (_, all_effs) = check_stmt (new_ctx, all_effs) s in
     (ctx, Set.union effs all_effs)
-  | CFor (x, e1, e2, e3, effs, acc_fs, s) ->
+  | CFor (x, e1, e2, e3, effs, _, s) ->
     let%bind effs1 = assert_int ctx e1 in
     let%bind effs2 = assert_int ctx e2 in
     let%bind effs3 = assert_int ctx e3 in
@@ -169,14 +169,14 @@ and check_stmt (ctx, all_effs) stmt =
       | Some _ -> Or_error.error_s [%message "loop variable already bound" x]
       | None -> Ok (set_index ctx x)
     in
-    let%bind () =
-      List.map acc_fs ~f:(fun (acc, f) ->
-          let%bind t_acc = lookup new_ctx acc in
-          let%bind t_f = lookup new_ctx f in
-          let%bind () = assert_type t_acc Type.Int stmt in
-          assert_type t_f (Type.Fun (Int, Type.Fun (Int, Int, no_eff), no_eff)) stmt)
-      |> Or_error.combine_errors_unit
-    in
+    (* let%bind () =
+     *   List.map acc_fs ~f:(fun (acc, f, merge_arr) ->
+     *       let%bind t_acc = lookup new_ctx acc in
+     *       let%bind t_f = lookup new_ctx f in
+     *       let%bind () = assert_type t_acc Type.Int stmt in
+     *       assert_type t_f (Type.Fun (Int, Type.Fun (Int, Int, no_eff), no_eff)) stmt)
+     *   |> Or_error.combine_errors_unit
+     * in *)
     let%map (_, all_effs) = check_stmt (new_ctx, all_effs) s in
     (ctx, Set.union effs all_effs)
   | Seq ss -> List.fold_result ss ~init:(ctx, all_effs) ~f:check_stmt

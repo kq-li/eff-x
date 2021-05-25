@@ -1,12 +1,13 @@
 #! /usr/bin/python3
 
+import copy
 import functools
 import json
 import multiprocess
 import subprocess
 import sys
 
-N = 8
+N = 1
 return_key = '*retval'
 
 def curry(f):
@@ -15,6 +16,20 @@ def curry(f):
       return f(x, y)
     return h
   return g
+
+def curry3(f):
+  def g(x):
+    def h(y):
+      def j(z):
+        return f(x, y, z)
+      return j
+    return h
+  return g
+
+def merge(arr1, arr2, indices):
+  for i in indices:
+    arr1[i] = arr2[i]
+  return arr1
 
 default_state = {
   'neg': lambda x: -x,
@@ -33,8 +48,10 @@ default_state = {
   'eq': curry(lambda x, y: x == y),
   'neq': curry(lambda x, y: x != y),
   'scan': lambda x: int(input()),
-  'print': print,
+  'print': lambda x: print(x, end=' '),
+  'newline': lambda x: print(),
   'alloc': lambda n: [None for i in range(n)],
+  'merge': curry3(merge),
 }
 
 def chunked(indices, n):
@@ -71,16 +88,17 @@ def eval_expr(e, state):
     if callable(e1):
       return e1(e2)
     elif e1['kind'] == 'lambda':
-      state[e1['arg']] = e2
-      state[return_key] = None
-      eval_stmt(e1['body'], state)
-      return state[return_key]
+      new_state = copy.deepcopy(state)
+      new_state[e1['arg']] = e2
+      new_state[return_key] = None
+      eval_stmt(e1['body'], new_state)
+      return new_state[return_key]
   else:
     return e
 
 def eval_stmt(s, state):
   if s['kind'] == 'assign':
-    e = eval_expr(s['expr'], state)
+    e = copy.deepcopy(eval_expr(s['expr'], state))
     a = s['lhs']
     indices = []
     while a['kind'] == 'sub':
@@ -123,12 +141,18 @@ def eval_stmt(s, state):
     end = eval_expr(s['end'], state)
     step = eval_expr(s['step'], state)
     indices = range(start, end, step)
+    print('cfor', chunked(indices, N))
     with multiprocess.Pool(N) as p:
-      for p_state in p.imap_unordered(func, chunked(indices, N)):
+      chunks = chunked(indices, N)
+      p_states = p.map(func, chunks)
+      for i in range(len(p_states)):
         for acc_f in s['acc_fs']:
           acc = acc_f[0]
           f = acc_f[1]
-          state[acc] = state[f](state[acc])(p_state[acc])
+          if acc_f[2]:
+            state[acc] = state[f](state[acc])(p_states[i][acc])(chunks[i])
+          else:
+            state[acc] = state[f](state[acc])(p_states[i][acc])
   elif s['kind'] == 'seq':
     for s1 in s['body']:
       eval_stmt(s1, state)
